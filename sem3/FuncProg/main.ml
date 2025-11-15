@@ -1,0 +1,1 @@
+let rec replicate (a, n) = if n == 0 then [] else [a] @ replicate (a, n-1);;
