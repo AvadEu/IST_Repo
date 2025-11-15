@@ -48,3 +48,6 @@ build/
 *.tar
 *.gz
 *.bak
+
+# --- Scala ---
+.scala-build
