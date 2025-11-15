@@ -1,0 +1,50 @@
+# --- IDE / Edytory ---
+.idea/
+*.iml
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# --- Wirtualne środowiska ---
+.venv/
+venv/
+env/
+
+# --- Systemowe / tymczasowe ---
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+
+# --- Pliki binarne / media ---
+*.psd
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.pdf
+
+# --- Dokumenty ---
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.ppt
+*.pptx
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+
+# --- Node / JS ---
+node_modules/
+dist/
+build/
+
+# --- Inne często ignorowane ---
+*.zip
+*.tar
+*.gz
+*.bak
