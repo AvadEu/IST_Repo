@@ -1,0 +1,738 @@
+.data
+input: .space 100
+mess_promt: .asciiz "Podaj liczbe instrukcji (1-5): "
+mess_wrong_input: .asciiz "Podano zla wartosc"
+mess_inst: .asciiz "Podaj instrukcje: "
+valid_msg: .asciiz "Instrukcja poprawna\n"
+invalid_msg: .asciiz "Blad! Niepoprawna instrukcja\n"
+stack_msg: .asciiz "Stos: \n"
+read_ptr: .word 0
+token_buf: .space 100
+str_ADD:      .asciiz "ADD"
+str_NOOP:     .asciiz "NOOP"
+str_ADDI:     .asciiz "ADDI"
+str_J:      .asciiz "J"
+str_MULT:     .asciiz "MULT"
+str_JAL:     .asciiz "JAL"
+str_JR:     .asciiz "JR"
+newline: .asciiz "\n" 
+mess_alloc: .asciiz "Zaalokowano pamieci na stosie: "
+
+.text
+main:
+    li $sp, 0x7fffe000   # ustawienie stosu na koniec dostępnej pamięci
+    move $s7, $sp          # zapamiętaj początkowy $sp
+
+    # komunikat
+    li $v0, 4
+    la $a0, mess_promt
+    syscall 
+    
+    li $v0, 5
+    syscall
+    move $s0, $v0 # $s0 - liczba instrukcji
+
+    # sprawdzenie liczby instrukcji
+    blez $s0, Wrong_input      # jeśli <= 0 -> błąd
+    li $t1, 6 
+    bge $s0, $t1, Wrong_input  # jeśli >= 6 -> błąd
+    
+    li $s1, 1 # licznik do pętli
+instr_loop:
+	bgt $s1, $s0, exit
+	li $v0, 4
+    	la $a0, mess_inst
+    	syscall
+    	
+    	li $v0, 8
+    	la $a0, input
+    	li $a1, 100
+    	syscall
+    
+la $t0, input
+li $t1, 0          # liczba słów
+li $t4, 0          # flaga: w słowie (0 = nie, 1 = tak)
+
+count_loop:
+    lb $t2, 0($t0)
+    beqz $t2, dispatch_check  # koniec ciągu
+
+    li $t3, 32        # ASCII spacja
+    beq $t2, $t3, check_separator
+
+    li $t3, 44        # przecinek
+    beq $t2, $t3, check_separator
+
+    li $t3, 10        # nowa linia
+    beq $t2, $t3, check_separator
+
+    # znak niebędący separatorem
+    li $t3, 0
+    beq $t4, $t3, new_word   # jeśli nie byliśmy w słowie ? nowe słowo
+
+    j next_char
+
+new_word:
+    addi $t1, $t1, 1    # zwiększ licznik słów
+    li $t4, 1           # ustaw flagę: jesteśmy w słowie
+    j next_char
+
+check_separator:
+    li $t4, 0           # opuszczamy słowo
+
+next_char:
+    addi $t0, $t0, 1
+    j count_loop
+
+
+# ===== Rozpoznanie instrukcji =====
+dispatch_check:
+    move $s5, $t1           # $s5 - liczba słów
+    la $t0, input
+    sw $t0, read_ptr
+
+    jal read_token         # wczytuje token do token_buf
+
+    la $a0, token_buf
+    # Sprawdzenie czy to instrukcja ADD
+    la $a1, str_ADD
+    jal check_token
+    beq $v0, 1, token_is_add
+	
+    la $a0, token_buf	
+    # Sprawdzenie czy to instrukcja NOOP
+    la $a1, str_NOOP
+    jal check_token
+    beq $v0, 1, token_is_noop
+    
+    la $a0, token_buf
+    # Sprawdzenie czy to instrukcja ADDI
+    la $a1, str_ADDI
+    jal check_token
+    beq $v0, 1, token_is_addi
+
+    la $a0, token_buf
+    # Sprawdzenie czy to instrukcja JR
+    la $a1, str_JR
+    jal check_token
+    beq $v0, 1, token_is_jr
+    
+    la $a0, token_buf
+    # Sprawdzenie czy to instrukcja JAL
+    la $a1, str_JAL
+    jal check_token
+    beq $v0, 1, token_is_jal
+    
+    la $a0, token_buf
+    # Sprawdzenie czy to instrukcja MULT
+    la $a1, str_MULT
+    jal check_token
+    beq $v0, 1, token_is_mult
+    
+    la $a0, token_buf
+    # Sprawdzenie czy to instrukcja J
+    la $a1, str_J
+    jal check_token
+    beq $v0, 1, token_is_j
+    
+    # jeśli żaden nie pasuje
+    j unknown_token
+    
+    check_token:
+    li $v0, 1          # zakładamy, że pasuje
+    
+    compare_loop:
+    lb $t0, 0($a0)     # znak z token_buf
+    lb $t1, 0($a1)     # znak ze wzorca
+
+    bne $t0, $t1, not_equal
+    beq $t0, $zero, equal_end  # jeśli oba znaki to 0, koniec
+
+    addi $a0, $a0, 1
+    addi $a1, $a1, 1
+    j compare_loop
+
+    not_equal:
+    li $v0, 0
+    equal_end:
+    jr $ra
+    
+# Funkcja ADD
+token_is_add:
+    li $t7, 4
+    bne $t7, $s5, print_invalid
+        
+    # ustaw read_ptr
+    la $t0, input
+    sw $t0, read_ptr
+
+    # token 1: MULT
+    jal read_token
+
+    # token 2: operand 1
+    jal read_token
+    la $a0, token_buf
+    lb $t3, 0($a0)
+    li $t5, '$'
+    bne $t3, $t5, print_invalid
+    jal Is_digit
+    li $t6, 0
+    beq $v0, $t6, print_invalid
+
+    # token 3: operand 2
+    jal read_token
+    la $a0, token_buf
+    lb $t3, 0($a0)
+    li $t5, '$'
+    bne $t3, $t5, print_invalid
+    jal Is_digit
+    beq $v0, $t6, print_invalid
+    
+    # token 4: operand 3
+    jal read_token
+    la $a0, token_buf
+    lb $t3, 0($a0)
+    li $t5, '$'
+    bne $t3, $t5, print_invalid
+    jal Is_digit
+    beq $v0, $t6, print_invalid
+
+    # dawanie na stos 
+    la $t0, input
+    sw $t0, read_ptr
+    jal read_token   # ADD
+    jal read_token   # $1
+    jal read_token   # $2
+    jal read_token   # $3
+    jal push_token_sp
+    
+    la $t0, input
+    sw $t0, read_ptr
+    jal read_token   # ADD
+    jal read_token   # $1
+    jal read_token   # $2
+    jal push_token_sp
+    
+    la $t0, input
+    sw $t0, read_ptr
+    jal read_token   # ADD
+    jal read_token   # $1
+    jal push_token_sp
+   
+    # Push instrukcji na koncu
+    la $t0, input
+    sw $t0, read_ptr
+    jal read_token
+    jal push_token_sp
+
+    j print_valid
+
+#Funkcja NOOP
+token_is_noop:
+    li $t7, 1
+    bne $t7, $s5, print_invalid
+    
+    la $t0, input
+    sw $t0, read_ptr
+    jal read_token
+    jal push_token_sp
+    
+    j print_valid
+    
+#Funckja ADDI    
+token_is_addi:
+    li   $t7, 4
+    bne  $t7, $s5, print_invalid
+
+    # ustaw read_ptr
+    la   $t0, input
+    sw   $t0, read_ptr
+
+    # token 1: ADDI
+    jal  read_token
+
+    # token 2: operand 1
+    jal  read_token
+    la   $a0, token_buf
+    lb   $t3, 0($a0)
+    li   $t5, '$'
+    bne  $t3, $t5, print_invalid
+    jal  Is_digit
+    li   $t6, 0
+    beq  $v0, $t6, print_invalid
+
+    # token 3: operand 2
+    jal  read_token
+    la   $a0, token_buf
+    lb   $t3, 0($a0)
+    li   $t5, '$'
+    bne  $t3, $t5, print_invalid
+    jal  Is_digit
+    li   $t6, 0
+    beq  $v0, $t6, print_invalid
+
+    # token 4: operand 3 (liczba lub etykieta)
+    jal  read_token
+    la   $a0, token_buf
+    lb   $t3, 0($a0)
+    li   $t5, '$'
+    beq  $t3, $t5, print_invalid   # nie może być rejestrem
+
+    # jeżeli zaczyna się od cyfry, sprawdź liczbę
+    li   $t4, '0'
+    li   $t6, '9'
+    blt  $t3, $t4, check_label_addi
+    bgt  $t3, $t6, check_label_addi
+    # tu mamy cyfrę ? sprawdź całe token_buf
+    jal  Is_number
+    li   $t6, 0
+    beq  $v0, $t6, print_invalid
+    j    push_addi_tokens
+
+check_label_addi:
+    # akceptuj etykietę tylko jeśli A–z
+    li   $t4, 'A'
+    li   $t6, 'z'
+    blt  $t3, $t4, print_invalid
+    bgt  $t3, $t6, print_invalid
+
+push_addi_tokens:
+    # teraz push wszystkich tokenów na stos
+    la   $t0, input
+    sw   $t0, read_ptr
+    jal  read_token   # ADDI
+    jal  read_token   # $reg1
+    jal  read_token   # $reg2
+    jal  read_token   # liczba/etykieta
+    jal  push_token_sp
+
+    la   $t0, input
+    sw   $t0, read_ptr
+    jal  read_token   # ADDI
+    jal  read_token   # $reg1
+    jal  read_token   # $reg2
+    jal  push_token_sp
+
+    la   $t0, input
+    sw   $t0, read_ptr
+    jal  read_token   # ADDI
+    jal  read_token   # $reg1
+    jal  push_token_sp
+
+    la   $t0, input
+    sw   $t0, read_ptr
+    jal  read_token   # ADDI
+    jal  push_token_sp
+
+    j    print_valid
+
+            
+Is_number:
+    la $t0, token_buf
+
+check_loop_number:
+    lb $t1, 0($t0)
+    beqz $t1, number_done
+
+    li $t2, 48      # '0'
+    blt $t1, $t2, not_number
+    li $t2, 57      # '9'
+    bgt $t1, $t2, not_number
+
+    addi $t0, $t0, 1
+    j check_loop_number
+
+number_done:
+    li $v0, 1       # TAK – to liczba
+    jr $ra
+
+not_number:
+    li $v0, 0       # NIE – nie jest liczbą
+    jr $ra
+            
+#Funckja JAL    
+token_is_jal:
+    li $t7, 2
+    bne $t7, $s5, print_invalid
+    
+    la $t0, input
+    sw $t0, read_ptr
+    jal read_token     # JAL
+    jal read_token     # argument
+    la $a0, token_buf
+    lb $t3, 0($a0)     # pierwszy znak tokena
+
+    # Jeśli zaczyna się od '$' ? błąd
+    li $t4, 36          # '$'
+    beq $t3, $t4, print_invalid
+
+    # Jeśli zaczyna się od cyfry ? błąd
+    li $t4, 48          # '0'
+    li $t5, 57          # '9'
+    slt $at, $t3, $t4   # $t3 < '0'
+    bne $at, $zero, label_ok    # jeśli mniej niż '0', OK (np. A-Z)
+
+    slt $at, $t5, $t3   # '9' < $t3
+    beq $at, $zero, print_invalid  # jeśli <= '9', to cyfra ? BŁĄD
+
+label_ok:
+    # zapisanie na stos
+    la $t0, input
+    sw $t0, read_ptr
+    jal read_token     # JAL
+    jal read_token     # label
+    jal push_token_sp
+
+    la $t0, input
+    sw $t0, read_ptr
+    jal read_token     # JAL
+    jal push_token_sp
+
+    j print_valid
+
+    
+check_upper:
+    li $t4, 57             # ASCII '9'
+    ble $t3, $t4, print_invalid  # jeśli <= '9' ? to cyfra ? BŁĄD
+  
+
+    
+
+#Funckja J
+token_is_j:
+    li $t7, 2
+    bne $t7, $s5, print_invalid
+
+    # Pobranie labela
+    la $t0, input
+    sw $t0, read_ptr
+    jal read_token      # J
+    jal read_token      # label
+    la $a0, token_buf
+    lb $t3, 0($a0)       # pierwszy znak etykiety
+
+    # Jeśli zaczyna się od '$' ? błąd
+    li $t4, 36           # '$'
+    beq $t3, $t4, print_invalid
+
+    # Jeśli zaczyna się od cyfry ? błąd
+    li $t4, 48           # '0'
+    li $t5, 57           # '9'
+    slt $at, $t3, $t4    # $t3 < '0'
+    bne $at, $zero, label_j_ok  # jeśli mniejsze niż '0' ? OK
+
+    slt $at, $t5, $t3    # '9' < $t3 ?
+    beq $at, $zero, print_invalid  # jeśli nie większy niż '9' ? BŁĄD
+
+label_j_ok:
+    # dawanie na stos 
+    la $t0, input
+    sw $t0, read_ptr
+    jal read_token   # J
+    jal read_token   # label
+    jal push_token_sp
+
+    la $t0, input
+    sw $t0, read_ptr
+    jal read_token   # J
+    jal push_token_sp
+
+    j print_valid
+
+    
+#Funckja MULT
+token_is_mult:
+    li $t7, 3
+    bne $t7, $s5, print_invalid
+    
+    # ustaw read_ptr
+    la $t0, input
+    sw $t0, read_ptr
+
+    # token 1: MULT
+    jal read_token
+
+    # token 2: operand 1
+    jal read_token
+    la $a0, token_buf
+    lb $t3, 0($a0)
+    li $t5, '$'
+    bne $t3, $t5, print_invalid
+    jal Is_digit
+    li $t6, 0
+    beq $v0, $t6, print_invalid
+
+    # token 3: operand 2
+    jal read_token
+    la $a0, token_buf
+    lb $t3, 0($a0)
+    li $t5, '$'
+    bne $t3, $t5, print_invalid
+    jal Is_digit
+    beq $v0, $t6, print_invalid
+
+    la $t0, input
+    sw $t0, read_ptr
+    jal read_token   # MULT
+    jal read_token   # $1
+    jal read_token   # $2
+    jal push_token_sp
+    
+    la $t0, input
+    sw $t0, read_ptr
+    jal read_token   # MULT
+    jal read_token   # $1
+    jal push_token_sp
+    
+    # Push instrukcji
+    la $t0, input
+    sw $t0, read_ptr
+    jal read_token
+    jal push_token_sp
+
+    j print_valid
+
+#Funckja JR
+token_is_jr:
+    li $t7, 2
+    bne $t7, $s5, print_invalid
+    
+    la $t0, input
+    sw $t0, read_ptr
+    jal read_token          # token 1: JR
+    jal read_token          # token 2: operand
+
+    la $a0, token_buf
+    lb $t3, 0($a0)
+    li $t5, '$'
+    bne $t3, $t5, print_invalid    # jeśli nie zaczyna się od '$' ? błąd
+
+    jal Is_digit                  # sprawdź, czy $X jest w zakresie 0–31
+    li $t6, 0
+    beq $v0, $t6, print_invalid   # jeśli wynik == 0 ? błąd
+
+    # dawanie na stos
+    la $t0, input
+    sw $t0, read_ptr
+
+    jal read_token   # JR
+    jal read_token   # $reg
+    jal push_token_sp
+
+    la $t0, input
+    sw $t0, read_ptr
+    jal read_token   # JR
+    jal push_token_sp
+
+    j print_valid
+
+    
+Is_digit:
+    la $t0, token_buf
+    addi $t0, $t0, 1         # pomiń znak '$'
+
+    lb $t2, 0($t0)
+    beq $t2, $zero, digit_fail
+
+    li $t1, 0                # $t1 = wynik
+
+parse_loop:
+    lb $t2, 0($t0)
+    beq $t2, $zero, check_range
+
+    li $t3, 48
+    blt $t2, $t3, digit_fail
+    li $t3, 57
+    bgt $t2, $t3, digit_fail
+
+    addi $t2, $t2, -48
+    mul $t1, $t1, 10
+    add $t1, $t1, $t2
+
+    addi $t0, $t0, 1
+    j parse_loop
+
+check_range:
+    li $t3, 31
+    ble $t1, $t3, digit_ok
+    j digit_fail
+
+digit_ok:
+    li $v0, 1
+    jr $ra
+
+digit_fail:
+    li $v0, 0
+    jr $ra
+
+    
+#Niepoprawna funkcja
+unknown_token:
+    j print_invalid
+    
+    
+push_token_sp:
+    # Oblicz dlugosc tokena
+    la $t1, token_buf
+    li $t2, 0           # licznik
+count_length_loop:
+    lb $t3, 0($t1)
+    beq $t3, $zero, alloc_space
+    addi $t2, $t2, 1
+    addi $t1, $t1, 1
+    j count_length_loop
+
+alloc_space:
+    addi $t2, $t2, 1        # +1 na \0
+    sub $sp, $sp, $t2       # rezerwuj miejsce na stosie
+    move $t4, $sp           # miejsce docelowe
+
+    la $t1, token_buf       # reset token_buf pointer
+copy_forward:
+    lb $t3, 0($t1)
+    sb $t3, 0($t4)
+    beq $t3, $zero, end_push_sp
+    addi $t1, $t1, 1
+    addi $t4, $t4, 1
+    j copy_forward
+
+end_push_sp:
+    jr $ra
+
+
+# ===== Komunikaty =====
+print_valid:
+    li $v0, 4
+    la $a0, valid_msg
+    syscall
+    addi $s1, $s1, 1
+    j instr_loop
+
+print_invalid:
+    li $v0, 4
+    la $a0, invalid_msg
+    syscall
+    j instr_loop
+
+Wrong_input:
+    li $v0, 4
+    la $a0, mess_wrong_input
+    syscall 
+    j exit
+
+# ===== Zamknięcie =====
+exit:
+    # Oblicz zaalokowaną pamięć: pocz_sp - aktualny_sp
+    subu $t0, $s7, $sp
+
+    # Wypisz komunikat
+    li   $v0, 4
+    la   $a0, mess_alloc
+    syscall
+
+    # Wypisz liczbę bajtów
+    li   $v0, 1
+    move $a0, $t0
+    syscall
+
+    # Nowa linia
+    li   $v0, 4
+    la   $a0, newline
+    syscall
+
+    # (ew. dalej) wypisz stos lub zakończ
+    li   $v0, 4
+    la   $a0, stack_msg
+    syscall
+    jal  print_stack
+
+    li   $v0, 10
+    syscall
+
+print_stack:
+    move $t0, $sp         # początek stosu
+
+print_stack_loop:
+    lb $t1, 0($t0)
+    beqz $t1, check_next_string
+    move $a0, $t0
+    li $v0, 4
+    syscall
+
+    li $v0, 4
+    la $a0, newline
+    syscall
+    j skip_to_next
+    
+check_next_string:
+    lb $t1, 0($t0)
+    beqz $t1, advance
+skip_to_next:
+    lb $t2, 0($t0)
+    addi $t0, $t0, 1
+    bnez $t2, skip_to_next
+    j print_stack_loop
+
+advance:
+    addi $t0, $t0, 1
+    lb $t2, 0($t0)
+    bnez $t2, print_stack_loop
+
+end_print_stack:
+    li $v0, 10
+    syscall
+
+
+# ===== read_token =====    
+read_token:
+    lw $t0, read_ptr         # adres aktualnej pozycji w ciągu wejściowym
+    la $t3, token_buf        # wskaźnik do bufora
+    li $t4, 0                # licznik znaków
+    li $v0, 0                # na razie nieużywane
+
+skip_space:
+    lb $t1, 0($t0)
+    beq $t1, $zero, token_fail
+    li $t2, 32               # spacja
+    beq $t1, $t2, skip_next
+    li $t2, 44               # przecinek
+    beq $t1, $t2, skip_next
+    li $t2, 10               # \n
+    beq $t1, $t2, skip_next
+    j read_loop
+
+skip_next:
+    addi $t0, $t0, 1
+    j skip_space
+
+read_loop:
+    lb $t1, 0($t0)
+    beq $t1, $zero, end_token
+    li $t2, 32               # spacja
+    beq $t1, $t2, end_token
+    li $t2, 44               # przecinek
+    beq $t1, $t2, end_token
+    li $t2, 10               # nowa linia
+    beq $t1, $t2, end_token
+
+    sb $t1, 0($t3)           # zapisz znak do bufora
+    addi $t3, $t3, 1
+    addi $t0, $t0, 1
+    addi $t4, $t4, 1
+    j read_loop
+
+end_token:
+    li $t1, 0
+    sb $t1, 0($t3)           # zakończ bufor znakiem '\0'
+    sw $t0, read_ptr         # zapisz nową pozycję wczytywania
+    jr $ra
+
+token_fail:
+    li $t1, 0
+    sb $t1, 0($t3)           # zapisz pusty string
+    li $v0, -1
+    jr $ra
+    
+end:
+	li $v1, 10
+	syscall

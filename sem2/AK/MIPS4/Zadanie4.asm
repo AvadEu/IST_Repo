@@ -1,0 +1,352 @@
+.data
+argument_buffer:    .space 32
+zero_double:	    .double 0.0 # Stała do porównania
+max_double:	        .double 1.7976931348623157e+308 # MAX DOUBLE
+min_double:	        .double -1.7976931348623157e+308 # MIN DOUBLE
+
+zero_div_err_txt:   .asciiz "Blad. Dzielenie przez 0 jest niedozwolone!"
+overfit_err_txt:    .asciiz "\nWystapilo przepelnienie, wynik poza zakresem!.\n"
+second_arg_msg:     .asciiz "Podaj druga liczbe: "
+num_format_txt:     .asciiz "Podana wartosc jest nieprawidlowa. Wprowadz liczbe w poprawnym formacie (z kropka)"
+num_digits_txt:     .asciiz "\nError: Maksymalna liczba cyfr po przecinku to 32!\n"
+first_arg_msg:      .asciiz "\nPodaj pierwsza liczbe: "
+scope_err_txt:      .asciiz "\nLiczba jest poza zakresem double. Sprobuj Ponownie!"
+menu_num_err:       .asciiz "\nNieprawidlowa opcja! Sprobuj ponownie!"
+carry_on_txt:       .asciiz "\nCzy chcesz obliczanie kontynuowac? (0-NIE, 1-TAK): "
+outcome_txt:        .asciiz "Wynik: "
+menu_txt:           .asciiz "\nJaka operacje wykonac?\n1 - Dodawanie\n2 - Odejmowanie\n3 - Mnozenie\n4 - Dzielenie\nWybierz operacje (1-4): "
+newline:            .asciiz "\n"
+
+.text
+main:
+petla_menu:
+    li      $v0, 4
+    la      $a0, newline                     # Wyswietlenie menu i nowej linii
+    syscall                                  
+
+    li      $v0, 4
+    la      $a0, menu_txt
+    syscall
+
+wybierz_operacje:
+    li      $v0, 12                         # Wczytanie znaku do $v0
+    syscall
+    move    $s0, $v0                        # Przeniesienie znaku do $s0
+    sub     $s0, $s0, 48  		            # Zamiana znaku na cyfre
+
+    beq     $s0, 1, get_first_arg           # Jezeli operacja sie zgadza => pobierz argument
+    beq     $s0, 2, get_first_arg           # Jezeli operacja sie zgadza => pobierz argument
+    beq     $s0, 3, get_first_arg           # Jezeli operacja sie zgadza => pobierz argument
+    bne     $s0, 4, wrong_operation         # Sprawdzenie dzialanie jest poza zakresem
+
+
+get_first_arg:
+    li      $v0, 4                          # Wypisanie komunikatu o pobranie wartosci
+    la      $a0, first_arg_msg
+    syscall
+
+    li      $s1, 1                          # Ustawienie 1 w $s1
+    jal     validate_num                    # Walidacja podanej wartosci
+    mov.d   $f12, $f0                       # Przeniesienie wyniku walidacji do $f12
+    
+    l.d     $f20, max_double
+    c.le.d  $f12, $f20                      # Sprawdzenie czy liczba jest mniejsza od MAX DOUBLE
+    bc1f    scope_err_1
+
+    l.d     $f20, min_double                # Sprawdzenie czy liczba jest wieksza od MIN DOUBLE
+    c.le.d  $f20, $f12
+    bc1f    scope_err_1
+
+
+get_second_arg:
+    li      $v0, 4                          # Wypisanie komunikatu o pobranie drugiej wartosci
+    la      $a0, second_arg_msg
+    syscall
+
+    li      $s1, 2                          # Ustawienie $s1 na 2
+    jal     validate_num                    # Walidacja podanej wartosci
+    mov.d   $f14, $f0                       # Przeniesienie zwroconej liczby double do $f14
+
+    l.d     $f20, max_double                # Sprawdzenie czy liczba jest mniejsza od MAX DOUBLE
+    c.le.d  $f14, $f20
+    bc1f    scope_err_2
+
+    l.d     $f20, min_double                # Sprawdzenie czy liczba jest większa od MIN DOUBLE
+    c.le.d  $f20, $f14
+    bc1f    scope_err_2
+
+    jal     calculate                       # Obliczenie wyniku
+
+
+wyswietl_wynik:
+    li      $v0, 4                          # Wyświetlenie komunikatu wynikowego
+    la      $a0, outcome_txt
+    syscall
+
+    c.eq.d $f2, $f2
+    bc1f blad_przepelnienie
+
+    li      $v0, 3                          # Wyświetlenie wyniku
+    mov.d   $f12, $f2
+    syscall
+
+
+iterate_loop:
+    li      $v0, 4                          # Wypisanie czy kontynuować
+    la      $a0, carry_on_txt      
+    syscall
+
+    li      $v0, 12                         # Wczytanie znaku
+    syscall
+
+    beq     $v0, '1', main                  # Jesli znak to 1 => powrot na poczatek
+    bne     $v0, '0', iterate_loop          # Jesli znak to 0 => Zakonczenie programu
+
+zakoncz:
+    li      $v0, 10                         # Zakoncz program
+    syscall
+
+
+calculate:
+    li      $t1, 1                           
+    beq     $s0, $t1, func_add              # Dodawanie
+    li      $t1, 2
+    beq     $s0, $t1, func_sub              # Odejmowanie
+    li      $t1, 3
+    beq     $s0, $t1, func_mul              # Mnozenie
+    li      $t1, 4
+    beq     $s0, $t1, func_div              # Dzielenie
+    jr      $ra
+
+func_add:
+    add.d   $f2, $f12, $f14                 # Wykonanie dodawania liczb double
+    jr      $ra                             # Powrót z funkcji
+
+func_sub:
+    sub.d   $f2, $f12, $f14                 # Wykonanie odejmowania liczb double
+    jr      $ra                             # Powrót z funkcji
+
+func_mul:
+    mul.d   $f2, $f12, $f14                 # Wykonanie mnożenia liczb double
+    jr      $ra                             # Powrót z funkcji
+
+func_div:
+    l.d     $f20, zero_double               # Wczytanie do $f20 0.0 do porownania
+    c.eq.d  $f14, $f20                      # Sprawdzenie czy dzielnik jest rowny 0.0
+    bc1t    zero_err                        # Wypisanie bledu
+
+    div.d   $f2, $f12, $f14                 # Wykonanie dzielenia liczb double
+    jr      $ra                             # Powrót z funkcji
+
+
+validate_num:
+    li      $v0, 8                          # Zapisanie string to argument_buffer
+    la      $a0, argument_buffer
+    li      $a1, 100
+    syscall                                  
+
+    la      $t0, argument_buffer            # Załadowanie adresu bufora do $t0
+    li      $t1, 0                          # t1 - pozycja
+    li      $t2, 0                          # t2 - ilosc kropek
+    lb      $t3, 0($t0)                     # Wczytanie do $t3 kolejnego znaku z bufora
+
+
+check_char:
+    beq     $t3, 10, parse_num              # Sprawdzenie spacja
+    beq     $t3, 0, parse_num               # Sprawdzenie null
+
+    beq     $t1, 0, check_minus             # Sprawdzenie minusa
+    j       sprawdz_cyfra_kropka            # Sprawdzenie cyfr i kropki
+
+
+check_minus:
+    li      $t4, 45                         # Wczytanie minusa do $t4
+    beq     $t3, $t4, next_char             # Sprawdzenie czy znak to minus
+    j       sprawdz_cyfra_kropka            # Skok do sprawdzenia cyfry lub kropki
+
+
+sprawdz_cyfra_kropka:
+    li      $t4, 48                         # Załadowanie kodu ASCII '0'
+    li      $t5, 57                         # Załadowanie kodu ASCII '9'
+    blt     $t3, $t4, sprawdz_kropka        # Sprawdzenie czy znak to cyfra
+    bgt     $t3, $t5, sprawdz_kropka
+    j       next_char                       # Skok do następnego znaku
+
+sprawdz_kropka:
+    li      $t4, 46                         # Sprawdzenie czy znak to kropka
+    beq     $t3, $t4, check_dot_counter
+    li      $t4, 44                         # Sprawdzenie czy znak to przecinek
+    beq     $t3, $t4, format_err
+    j       format_err                      # Skok do obsługi błędu dla innego znaku
+
+
+check_dot_counter:
+    addi    $t2, $t2, 1                     # Zwiększenie licznika kropek
+    bgt     $t2, 1, format_err              # Sprawdzenie czy jest więcej niż jedna kropka
+    j       next_char                       # Skok do następnego znaku
+
+
+next_char:
+    addi    $t1, $t1, 1                     # Zwiększenie licznika pozycji
+    add     $t6, $t0, $t1                   # Obliczenie indeksu nastepnego znaku
+    lb      $t3, 0($t6)                     # Załadowanie kolejnego znaku
+    j       check_char                      # Skok do sprawdzenia znaku
+
+
+format_err:
+    li      $v0, 4                          # Wyswietlenie komunikatu o blednym formatowaniu
+    la      $a0, num_format_txt
+    syscall
+    
+    li      $t8, 1			                # Wczytanie 1 do $t8
+    beq     $s1, $t8, get_first_arg
+    li      $t8, 2			                # Wczytanie 2 do $t8
+    beq     $s1, $t8, get_second_arg
+
+
+parse_num:
+    la      $a1, argument_buffer            # Zaladowanie adresu bufora do $a1
+    li      $t0, 0                          # Ustawienie indeksu znaku na 0
+    li      $t1, 0                          # Ustawienie flagi minusa na 0
+    li      $t2, 0                          # Czesc calkowita
+    li      $t3, 0                          # Czesc ulamkowa
+    li      $t4, 0                          # Licznik cyfr po kropce
+    li      $t5, 0                          # Zmienna dla parsowanej czesci 0 - calkowita
+
+    lb      $t6, 0($a1)                     # Pobranie pierwszego znaku z bufora do rejestru t6
+    li      $t7, 45                         # Sprawdzenie czy znak to minus
+    bne     $t6, $t7, parse_int
+    li      $t1, 1                          # Ustawienie flagi minusa na 1
+    addi    $t0, $t0, 1                     # Zwiekszenie indeksu znaku
+
+
+parse_int:
+    add     $t8, $a1, $t0                   # Adres obliczanego znaku
+    lb      $t6, 0($t8)                     # Pobranie znaku z bufora do t6, tego wyzej policzonego
+    beq     $t6, 0, parse_end               # Koniec jesli enter
+    beq     $t6, 10, parse_end              # Koniec jesli null
+    li      $t7, 46                         # Sprawdzenie czy znak to kropka
+    beq     $t6, $t7, parse_point           # Skok do parsowania czesci ulakmowej
+
+    li      $t7, 48                         # Wczytanie kodu ASCII cyfry '0' 
+    li      $t9, 57                         # Wczytanie kodu ASCII cyfry '9'
+    blt     $t6, $t7, parse_end          
+    bgt     $t6, $t9, parse_end             # Sprawdzenie czy cyfra
+    sub     $t6, $t6, $t7                   # Zamiana znaku na cyfre
+    mul     $t2, $t2, 10                    # Mnozenie przez 10 do uzyskania poprawnej pozycji
+    add     $t2, $t2, $t6                   # Dodanie wartosci do sumy czesci calkowitej
+    addi    $t0, $t0, 1                     # Przejście do kolejnego znaku
+    j       parse_int                       # Powrót do pętli parsowania części całkowitej
+
+
+parse_point:
+    li      $t5, 1                          # Rozpoczecie parsowania ulamkowego
+    addi    $t0, $t0, 1                     # Pierwszy znak po kropce
+
+
+parse_point_loop:
+    add     $t8, $a1, $t0                   # Obliczenie adresu aktualnego znaku -> przesuwamy wskaznik na odpowiednie miejsce
+    lb      $t6, 0($t8)                     # Pobranie znaku z bufora do $t6
+    beq     $t6, 0, parse_end               # Jesli enter to koniec
+    beq     $t6, 10, parse_end              # Jesli null  to koniec
+    li      $t7, 48
+    li      $t9, 57
+    blt     $t6, $t7, parse_end             # Sprawdzenie czy znak to cyfra
+    bgt     $t6, $t9, parse_end
+    sub     $t6, $t6, $t7                   # Zamiana znaku na cyfre
+    mul     $t3, $t3, 10                    # Przesuniecie wartosci
+    add     $t3, $t3, $t6                   # Dodanie wartosci do sumy ulamkowej
+    addi    $t4, $t4, 1                     # Zwiekszenie indeksu bufora
+    addi    $t0, $t0, 1                     # Zwiekszenie indeksu znaku
+    
+    li      $t5, 32                         # Wczytanie 15 do $t5
+    bgt     $t4, $t5, blad_ulamek           # Wyswietlenie komunikatu bledu
+    
+    j       parse_point_loop                # Powrót do parsowania
+
+
+parse_end:
+    mtc1    $t2, $f0                        # Wczytanie czesci calkowitej do $f0
+    cvt.d.w $f0, $f0                        # Konwersja części całkowitej na double
+    beq     $t4, 0, check_minus_parser      # Sprawdzenie czy czesc ulamkowa istnieje
+
+    mtc1    $t3, $f2                        # Przeniesienie części ułamkowej do rejestru $f2
+    cvt.d.w $f2, $f2                        # Konwersja części ułamkowej na double
+
+    li      $t5, 1                          # Ustawienie dzielnika na 1 (będzie obliczany jako 10^liczba_cyfr)
+    move    $t6, $t4                        # Skopiowanie liczby cyfr po kropce do $t6
+
+
+parsuj_powtorz_dzielenie:
+    beq     $t6, 0, parse_end_dzielnika     # Sprawdzenie czy liczba cyfr po kropce wynosi 0, jeśli tak to koniec obliczania dzielnika
+    mul     $t5, $t5, 10                    # Mnożenie dzielnika przez 10
+    addi    $t6, $t6, -1                    # Zmniejszenie licznika cyfr po kropce o 1
+    j       parsuj_powtorz_dzielenie        # Powrót do pętli obliczania dzielnika
+
+
+parse_end_dzielnika:
+    mtc1    $t5, $f4                        # Przeniesienie dzielnika do rejestru $f4
+    cvt.d.w $f4, $f4                        # Konwersja dzielnika na double
+    div.d   $f2, $f2, $f4                   # Dzielenie części ułamkowej przez dzielnik (10^liczba_cyfr)
+    add.d   $f0, $f0, $f2                   # Dodanie do $f0 części ułamkowej do części całkowitej 
+
+
+check_minus_parser:
+    beq     $t1, 0, parser_koniec           # Negacja wyniku dla ujemnej liczby
+    neg.d   $f0, $f0
+
+
+parser_koniec:
+    jr      $ra                             # Zwrocenie wartosci funkcji
+
+
+blad_ulamek:
+    li      $v0, 4                          # Wyświetlenie komunikatu o błędzie liczby cyfr po przecinku
+    la      $a0, num_digits_txt
+    syscall
+    li      $t8, 1
+    beq     $s1, $t8, get_first_arg
+    li      $t8, 2
+    beq     $s1, $t8, get_second_arg
+
+wrong_operation:
+    li      $v0, 4                          # Komunikat blednej operacji
+    la      $a0, menu_num_err
+    syscall
+    j       petla_menu
+
+scope_err_1:
+    li      $v0, 4                          # Argument 1 poza zakresem
+    la      $a0, scope_err_txt       
+    syscall
+    j       get_first_arg
+
+scope_err_2:
+    li      $v0, 4                          # Argument 2 poza zakresem
+    la      $a0, scope_err_txt
+    syscall
+    j       get_second_arg
+
+zero_err:
+    li      $v0, 4                          # Dzielenie przez 0 err_txt
+    la      $a0, zero_div_err_txt         
+    syscall                                  
+    j       iterate_loop                    # Skok do pytania o kontynuację
+
+blad_przepelnienie:
+    li      $v0, 4
+    la      $a0, overfit_err_txt
+    syscall
+    j       iterate_loop
+
+wyczysc_argument_buffer:                    # Czyszczenie bufora dla drugiego argumentu
+    li $t0, 0
+    la $t1, argument_buffer
+czysc_petla:
+    bge $t0, 32, koniec_czyszczenia
+    sb $zero, 0($t1)
+    addi $t1, $t1, 1
+    addi $t0, $t0, 1
+    j czysc_petla
+koniec_czyszczenia:
+    jr $ra

@@ -1,0 +1,807 @@
+.data
+
+position_pointer:   .word 0
+input:              .space 100
+token_buf:          .space 100
+err_input_msg:      .asciiz "Podano niepoprawna wartosc. Sprobuj ponownie!"
+alloc_msg:          .asciiz "Liczba bajtow zarezerwowana na stosie: "
+instrukcje_prompt:  .asciiz "Podaj liczbe instrukcji (1-5): "
+invalid_msg:        .asciiz "Blad! Niepoprawna instrukcja\n"
+valid_msg:          .asciiz "Instrukcja poprawna\n"
+stack_msg:          .asciiz "Stos instrukcji: \n"
+instr_msg:          .asciiz "Podaj instrukcje: "
+wzr_ADD:            .asciiz "ADD"
+wzr_NOOP:           .asciiz "NOOP"
+wzr_ADDI:           .asciiz "ADDI"
+wzr_J:              .asciiz "J"
+wzr_MULT:           .asciiz "MULT"
+wzr_JAL:            .asciiz "JAL"
+wzr_JR:             .asciiz "JR"
+newline:            .asciiz "\n"
+wzr_XOR:            .asciiz "XOR" 
+
+.text
+
+main:
+    li $sp, 0x7fffe000              # Ustawienie rejestru stosu na ostatni dostepny adres wolnej pamieci
+    move $s7, $sp                   # Przenieś $sp do $s7
+
+    li $v0, 4                       # Wyświetlenie komunikatu o liczbie podaniu liczby instrukcji
+    la $a0, instrukcje_prompt 
+    syscall 
+    
+    li $v0, 5                       # Pobranie liczby instrukcji
+    syscall
+    move $s0, $v0                   # Zapisanie liczby instrukcji do $s0
+
+    blez $s0, err_msg_func          # Jezeli liczba instrukcji <= 0 wypisz błąd
+    
+    li $t1, 5                       # Ustaw wartość 5 do porównania
+    bgt $s0, $t1, err_msg_func      # jeśli liczba instrukcji > 5 wypisz błąd
+    
+    li $s1, 1                       # licznik do pętli
+
+instr_loop:
+    bgt $s1, $s0, exit              # Jezeli licznik petli przekroczy ilosc instrukcji koniec programu
+	
+    li $v0, 4                       # Wyświetlenie komunikatu o podaniu instrukcji
+    la $a0, instr_msg
+    syscall
+
+    li $v0, 8                       # Pobranie instrukcji od uzytkownika
+    la $a0, input
+    li $a1, 100
+    syscall
+    
+    la $t0, input                   # Zapisanie wprowadzonej instrukcji do $t0
+
+    li $t1, 0                       # Ustawienie początkowej liczby słów na 0 do $t1
+    li $t4, 0                       # Wartość pomocnicza - czy iteracja po słowie
+
+count_loop:
+    lb $t2, 0($t0)                  # Załadowanie do $t2 kolejnego bajta z wprowadzonego tekstu
+    beqz $t2, dispatch_check        # Jezeli null byte rozpocznij analize ciagu 
+
+    li $t3, ' '                     # Przypisanie spacji do porównania
+    beq $t2, $t3, out_of_word_mark  # Ustawienie flagi gdy separator  
+
+    li $t3, ','                     # Przypisanie przecinka do porównania
+    beq $t2, $t3, out_of_word_mark  # Ustawienie flagi gdy separator
+
+    li $t3, '\n'                    # Przypisanie nowej linii do porównania
+    beq $t2, $t3, out_of_word_mark  # Ustawienie flagi gdy separator
+
+    li $t3, 0                       # Ustawienie $t3 na 0 do porównania
+    beq $t4, $t3, new_word          # Jezeli znak nie jest separatorem 
+
+    j next_char                     # Załadowanie nowego znaku do sprawdzenia
+
+new_word:
+    addi $t1, $t1, 1                # zwiększ licznik słów
+    li $t4, 1                       # ustaw flagę: jesteśmy w słowie
+    j next_char                     # Przejście do następnego znaku
+
+out_of_word_mark:
+    li $t4, 0                       # Zaznaczenie wyjścia ze słowa
+
+next_char:
+    addi $t0, $t0, 1                # Wykonanie $t0 += 1 
+    j count_loop                    # Powrót do pętli liczącej słowa
+
+
+# PODZIAŁ ROZPOZNAWANIA INSTRUKCJI 
+dispatch_check:
+    move $s5, $t1                   # Przypisanie do $s5 liczby słów z $t1
+    la $t0, input                   # Załadowanie do $t0 wczytanej wartości 
+    sw $t0, position_pointer        # Zapisanie wskaźnika słowa do $t0 
+
+    jal read_token                  # wczytuje token i zapisuje go w token_buff
+
+    
+    # OBSŁUGA INSTRUKCJI ADD
+    la $a0, token_buf               # załadowanie zawartości token_buf do $a0
+    la $a1, wzr_ADD                 # załadowanie do $a1 instrukcji ADD do porównania
+    jal check_token                 # Sprawdzenie tokena
+    beq $v0, 1, token_is_add        # Jezeli dana instrukcja to sprawdzamy dalej
+	
+    
+    # OBSŁUGA INSTRUKCJI NOOP
+    la $a0, token_buf               # załadowanie zawartości token_buf do $a0
+    la $a1, wzr_NOOP                # załadowanie do $a1 instrukcji NOOP do porównania
+    jal check_token                 # Sprawdzenie tokena
+    beq $v0, 1, token_is_noop       # Jezeli dana instrukcja to sprawdzamy dalej
+    
+    
+    # OBSŁUGA INSTRUKCJI ADDI
+    la $a0, token_buf               # załadowanie zawartości token_buf do $a0
+    la $a1, wzr_ADDI                # załadowanie do $a1 instrukcji ADDI do porównania
+    jal check_token                 # Sprawdzenie tokena
+    beq $v0, 1, token_is_addi       # Jezeli dana instrukcja to sprawdzamy dalej
+
+    
+    # OBSŁUGA INSTRUKCJI JR
+    la $a0, token_buf               # załadowanie zawartości token_buf do $a0
+    la $a1, wzr_JR                  # załadowanie do $a1 instrukcji JR do porównania
+    jal check_token                 # Sprawdzenie tokena
+    beq $v0, 1, token_is_jr         # Jezeli dana instrukcja to sprawdzamy dalej
+    
+    
+    # OBSŁUGA INSTRUKCJI JAL
+    la $a0, token_buf               # załadowanie zawartości token_buf do $a0
+    la $a1, wzr_JAL                 # załadowanie do $a1 instrukcji JAL do porównania
+    jal check_token                 # Sprawdzenie tokena
+    beq $v0, 1, token_is_jal        # Jezeli dana instrukcja to sprawdzamy dalej
+    
+    
+    # OBSŁUGA INSTRUKCJI MULT
+    la $a0, token_buf               # załadowanie zawartości token_buf do $a0
+    la $a1, wzr_MULT                # załadowanie do $a1 instrukcji MULT do porównania
+    jal check_token                 # Sprawdzenie tokena
+    beq $v0, 1, token_is_mult       # Jezeli dana instrukcja to sprawdzamy dalej
+    
+    
+    # OBSŁUGA INSTRUKCJI J
+    la $a0, token_buf               # załadowanie zawartości token_buf do $a0
+    la $a1, wzr_J                   # załadowanie do $a1 instrukcji J do porównania
+    jal check_token                 # Sprawdzenie tokena
+    beq $v0, 1, token_is_j          # Jezeli dana instrukcja to sprawdzamy dalej
+    
+    # OBSŁUGA INSTRUKCJI XOR
+    la $a0, token_buf
+    la $a1, wzr_XOR
+    jal check_token
+    beq $v0, 1 token_is_xor
+    
+    j unknown_token                 # Jezeli token nie pasuje wyswietl komunikat
+    
+    check_token:
+    li $v0, 1                       # Ustawienie początkowej wartości sprawdzenia (0 - zle; 1 - dobrze)
+    
+    compare_loop:
+    lb $t0, 0($a0)                  # załaduj znak z bufora tokena znak z token_buf
+    lb $t1, 0($a1)                  # załaduj znak ze wzorcowej komendy 
+
+    bne $t0, $t1, not_equal         # Jezeli sie roznia 
+    beq $t0, $zero, equal_end       # jeśli oba znaki to 0 -> koniec porównywania
+
+    addi $a0, $a0, 1                # Przesunięcie znaku w buforze tokena
+    addi $a1, $a1, 1                # Przesunięcie znaku we wzorcowym tekście
+    
+    j compare_loop                  # Kolejna iteracja porównania
+
+    not_equal:
+        li $v0, 0                   # Ustawienie wartości do zwrócenia na 0
+    
+    equal_end:
+        jr $ra                      # Powrót i zwrócenie wartości z $v0
+    
+
+# PARSOWANIE INSTRUKCJI ADD
+token_is_add:
+    li $t7, 4                       # Przypisanie di $t7 wartości do porównania 4
+    bne $t7, $s5, invalid_msg_func  # Sprawdzenie poprawnej ilość parametrów
+        
+    # ustaw position_pointer
+    la $t0, input                   # Przypisanie inputu do $t0
+    sw $t0, position_pointer        # Zapisanie $t0 do position_pointer
+
+    # token 1 -> ADD
+    jal read_token                  # Odczytanie tokena
+
+    li $t6, 0                       # Przypisanie do $t6 wartość 0 do porównania
+    
+    # token 2 -> PARAMETR 1
+    jal read_token                  # Odczytanie tokena
+    la $a0, token_buf               # Przypisanie do $a0 bufora tokena
+    lb $t3, 0($a0)                  # Załadowanie do $t3 bajtu z bufora
+    li $t5, '$'                     # Załadowanie do $t5 '$' do porównania
+    bne $t3, $t5, invalid_msg_func  # Sprawdzenie czy pierwszy znak parametru to '$'
+    jal czy_cyfra                   # Sprawdzenie czy jest to liczba
+    beq $v0, $t6, invalid_msg_func  # Porównanie czy obok '$' jest poprawna wartość
+
+    # token 3 -> PARAMETR 2
+    jal read_token                  # Odczytanie tokena         
+    la $a0, token_buf               # Przypisanie do $a0 bufora tokena
+    lb $t3, 0($a0)                  # Załadowanie do $t3 bajtu z bufora
+    li $t5, '$'                     # Załadowanie do $t5 '$' do porównania
+    bne $t3, $t5, invalid_msg_func  # Sprawdzenie czy pierwszy znak parametru to '$'
+    jal czy_cyfra                   # Sprawdzenie czy jest to liczba
+    beq $v0, $t6, invalid_msg_func  # Porównanie czy obok '$' jest poprawna wartość
+    
+    # token 4: -> PARAMETR 3
+    jal read_token                  # Odczytanie słowa
+    la $a0, token_buf               # Przypisanie do $a0 bufora tokena
+    lb $t3, 0($a0)                  # Załadowanie do $t3 bajtu z bufora
+    li $t5, '$'                     # Załadowanie do $t5 '$' do porównania
+    bne $t3, $t5, invalid_msg_func  # Sprawdzenie czy pierwszy znak parametru to '$'
+    jal czy_cyfra                   # Sprawdzenie czy jest to liczba
+    beq $v0, $t6, invalid_msg_func  # Porównanie czy obok '$' jest poprawna wartość
+
+    la $t0, input                   # Załadowanie do $t0 input
+    sw $t0, position_pointer        # Zapisanie pozycji w inpucie do position_pointer
+    jal read_token                  # Wczytanie tokena ADD 
+    jal read_token                  # Wczytanie tokena $1
+    jal read_token                  # Wczytanie tokena $2
+    jal read_token                  # Wczytanie tokena $3 do $t1
+    jal stack_push                  # Wywołanie PUSH na stos
+    
+    la $t0, input                   # Załadowanie słowa
+    sw $t0, position_pointer        # Zapisanie $t0 do position_pointer
+    jal read_token                  # Wczytanie tokena ADD
+    jal read_token                  # Wczytanie tokena $1
+    jal read_token                  # Wczytanie tokena $2
+    jal stack_push                  # Wywołanie PUSH na stos
+    
+    la $t0, input                   # Załadowanie słowa
+    sw $t0, position_pointer        # Zapisanie $t0 position_pointer
+    jal read_token   # ADD          # Wczytanie tokena ADD
+    jal read_token   # $1           # Wczytanie tokena $1
+    jal stack_push                  # Wywołanie PUSH na stos
+
+    la $t0, input                   # Załadowanie słowa
+    sw $t0, position_pointer        # Zapisanie $t0 do position_pointer
+    jal read_token                  # Wczytanie tokena ADD
+    jal stack_push                  # Wywołanie PUSH na stos
+
+    j valid_msg_func                # Wyświetlenie komunikatu
+
+
+# PARSOWANIE INSTRUKCJI XOR
+token_is_xor:
+    li $t7, 4                       # Przypisanie di $t7 wartości do porównania 4
+    bne $t7, $s5, invalid_msg_func  # Sprawdzenie poprawnej ilość parametrów
+        
+    # ustaw position_pointer
+    la $t0, input                   # Przypisanie inputu do $t0
+    sw $t0, position_pointer        # Zapisanie $t0 do position_pointer
+
+    # token 1 -> ADD
+    jal read_token                  # Odczytanie tokena
+
+    li $t6, 0                       # Przypisanie do $t6 wartość 0 do porównania
+    
+    # token 2 -> PARAMETR 1
+    jal read_token                  # Odczytanie tokena
+    la $a0, token_buf               # Przypisanie do $a0 bufora tokena
+    lb $t3, 0($a0)                  # Załadowanie do $t3 bajtu z bufora
+    li $t5, '$'                     # Załadowanie do $t5 '$' do porównania
+    bne $t3, $t5, invalid_msg_func  # Sprawdzenie czy pierwszy znak parametru to '$'
+    jal czy_cyfra                   # Sprawdzenie czy jest to liczba
+    beq $v0, $t6, invalid_msg_func  # Porównanie czy obok '$' jest poprawna wartość
+
+    # token 3 -> PARAMETR 2
+    jal read_token                  # Odczytanie tokena         
+    la $a0, token_buf               # Przypisanie do $a0 bufora tokena
+    lb $t3, 0($a0)                  # Załadowanie do $t3 bajtu z bufora
+    li $t5, '$'                     # Załadowanie do $t5 '$' do porównania
+    bne $t3, $t5, invalid_msg_func  # Sprawdzenie czy pierwszy znak parametru to '$'
+    jal czy_cyfra                   # Sprawdzenie czy jest to liczba
+    beq $v0, $t6, invalid_msg_func  # Porównanie czy obok '$' jest poprawna wartość
+    
+    # token 4: -> PARAMETR 3
+    jal read_token                  # Odczytanie słowa
+    la $a0, token_buf               # Przypisanie do $a0 bufora tokena
+    lb $t3, 0($a0)                  # Załadowanie do $t3 bajtu z bufora
+    li $t5, '$'                     # Załadowanie do $t5 '$' do porównania
+    bne $t3, $t5, invalid_msg_func  # Sprawdzenie czy pierwszy znak parametru to '$'
+    jal czy_cyfra                   # Sprawdzenie czy jest to liczba
+    beq $v0, $t6, invalid_msg_func  # Porównanie czy obok '$' jest poprawna wartość
+
+    la $t0, input                   # Załadowanie do $t0 input
+    sw $t0, position_pointer        # Zapisanie pozycji w inpucie do position_pointer
+    jal read_token                  # Wczytanie tokena ADD 
+    jal read_token                  # Wczytanie tokena $1
+    jal read_token                  # Wczytanie tokena $2
+    jal read_token                  # Wczytanie tokena $3 do $t1
+    jal stack_push                  # Wywołanie PUSH na stos
+    
+    la $t0, input                   # Załadowanie słowa
+    sw $t0, position_pointer        # Zapisanie $t0 do position_pointer
+    jal read_token                  # Wczytanie tokena ADD
+    jal read_token                  # Wczytanie tokena $1
+    jal read_token                  # Wczytanie tokena $2
+    jal stack_push                  # Wywołanie PUSH na stos
+    
+    la $t0, input                   # Załadowanie słowa
+    sw $t0, position_pointer        # Zapisanie $t0 position_pointer
+    jal read_token   # ADD          # Wczytanie tokena ADD
+    jal read_token   # $1           # Wczytanie tokena $1
+    jal stack_push                  # Wywołanie PUSH na stos
+
+    la $t0, input                   # Załadowanie słowa
+    sw $t0, position_pointer        # Zapisanie $t0 do position_pointer
+    jal read_token                  # Wczytanie tokena ADD
+    jal stack_push                  # Wywołanie PUSH na stos
+
+    j valid_msg_func                # Wyświetlenie komunikatu
+
+
+# PARSOWANIE INSTRUKCJI NOOP
+token_is_noop:
+    li $t7, 1                       # Zapisanie w $t7 liczby parametrów do porównania
+    bne $t7, $s5, invalid_msg_func  # Sprawdzenie czy zgadza się ilość tokenów w instrukcji
+    
+    la $t0, input                   # Wczytanie input do $t0
+    sw $t0, position_pointer        # Zapisanie $t0 w position_pointer
+    jal read_token                  # Wczytanie tokena NOOP
+    jal stack_push                  # Wywołanie PUSH na stos
+    
+    j valid_msg_func                # Wyświetlenie komunikatu
+
+
+# PARSOWANIE INSTRUKCJI ADDI
+token_is_addi:
+    li   $t7, 4                     # Zapisanie w $t7 liczby parametrów do porównania
+    bne  $t7, $s5, invalid_msg_func # Sprawdzenie czy zgadza się ilość tokenów w instrukcji
+
+    la   $t0, input                 # Wczytanie input do $t0
+    sw   $t0, position_pointer      # Zapisanie $t0 w position_pointer
+
+    # token 1 -> ADDI
+    jal  read_token                 # Wczytanie tokena
+
+    li   $t6, 0                     # Ustawienie $t6 na 0 do porównania
+    
+    # token 2 -> PARAMETR 1
+    jal  read_token                 # Wczytanie tokena
+    la   $a0, token_buf             # Przypisanie bufora do $a0
+    lb   $t3, 0($a0)                # Wczytanie bajtu znaku do $t3
+    li   $t5, '$'                   # Wczytanie do $t5 '$' do porównania
+    bne  $t3, $t5, invalid_msg_func # Sprawdzenie czy zgadza się parametr
+    jal  czy_cyfra                  # Sprawdzenie czy kolejny bajt jest liczbą
+    beq  $v0, $t6, invalid_msg_func # Sprawdzenie czy zgadza się 
+
+    # token 3 -> PARAMETR 2
+    jal  read_token                 # Wczytanie tokena 
+    la   $a0, token_buf             # Wczytanie bufora do $a0
+    lb   $t3, 0($a0)                # Wczytanie znaku do $t3
+    li   $t5, '$'                   # Wczytanie '$' do $t5 do porównania
+    bne  $t3, $t5, invalid_msg_func # Sprawdzenie czy zgadza się parametr
+    jal  czy_cyfra                  # Sprawdzenie czy kolejny bajt jest cyfrą
+    beq  $v0, $t6, invalid_msg_func # Sprawdzenie czy się zgadza parametr
+
+    # token 4 -> PARAMETR 3 
+    jal  read_token                 # Wczytaj token
+    la   $a0, token_buf             # Załaduj bufor tokena do $a0
+    lb   $t3, 0($a0)                # Wczytaj znak do $t3
+    li   $t5, '$'                   # Załaduj znak '$' do porównania do $t5
+    beq  $t3, $t5, invalid_msg_func # Sprawdzenie poprawności parametru
+
+    li   $t4, '0'                   # Przypisanie '0' do $t4 do porównania
+    li   $t6, '9'                   # Przypisanie '0' do $t4 do porównania
+    blt  $t3, $t4, invalid_msg_func # Sprawdzenie czy parametr nie jest liczbą
+    bgt  $t3, $t6, invalid_msg_func # Sprawdzenie czy parametr nie jest liczbą
+    jal  Is_number                  # Sprawdzenie czy jest to liczba
+    beq  $v0, $t6, invalid_msg_func # Sprawdzenie czy parametr jest prawidłowy
+
+    la   $t0, input                 # Wczytanie input do $t0
+    sw   $t0, position_pointer      # Zapisanie $t0 w position_pointer
+    jal  read_token                 # Wczytanie tokena ADDI
+    jal  read_token                 # Wczytanie tokena $1
+    jal  read_token                 # Wczytanie tokena $2
+    jal  read_token                 # Wczytanie tokena <wartosc>
+    jal  stack_push                 # Wywołanie PUSH dla <wartosci>
+
+    la   $t0, input                 # Wczytanie input do $t0
+    sw   $t0, position_pointer      # Zapisanie $t0 do position_pointer
+    jal  read_token                 # Wczytanie tokena ADDI
+    jal  read_token                 # Wczytanie tokena $1
+    jal  read_token                 # Wczytanie tokena $2
+    jal  stack_push                 # Wywołanie PUSH dla $2
+
+    la   $t0, input                 # Wczytanie input do $t0
+    sw   $t0, position_pointer      # Zapisanie $t0 do position_pointer
+    jal  read_token   # ADDI        # Wczytanie tokena ADDI
+    jal  read_token   # $reg1       # Wczytanie tokena $1
+    jal  stack_push                 # Wywołanie PUSH dla $1
+
+    la   $t0, input                 # Wczytanie input od $t0
+    sw   $t0, position_pointer      # Zapisanie $t0 do position_pointer
+    jal  read_token                 # Wczytanie tokena ADDI
+    jal  stack_push                 # Wywołanie PUSH dla ADDI
+
+    j    valid_msg_func             # Wyświetlenie komunikatu
+
+
+# PARSOWANIE INSTRUKCJI JAL    
+token_is_jal:
+    li $t7, 2                       # Zapisanie do $t7 liczby słów do porównania
+    bne $t7, $s5, invalid_msg_func  # Sprawdzenie poprawności parametrów
+    
+    la $t0, input                   # Wczytanie input do $t0
+    sw $t0, position_pointer        # Zapisanie $t0 do position_pointer
+    jal read_token                  # Wczytanie tokena JAL
+    jal read_token                  # Wczytanie tokena <label>
+    la $a0, token_buf               # Załadowanie bufora tokena do $a0
+    
+    lb $t3, 0($a0)                  # W czytanie pierwszego znaku do $t3
+
+    li $t4, '$'                     # Wczytanie '$' do porównania do $t4
+    beq $t3, $t4, invalid_msg_func  # Sprawdzenie poprawności parametru
+
+    li $t4, '0'                     # Wczytanie do $t4 '0' do porównania
+    li $t5, '9'                     # Wczytanie do $t5 '9' do porównania
+    slt $t2, $t3, $t4               # Sprawdzenie czy nie jest cyfra
+    blt $t3, $t4, push_jal          # Sprawdzenie czy jest słowem
+
+    slt $t2, $t5, $t3               # Sprawdzenie czy nie jest cyfra
+    beq $t2, $zero, invalid_msg_func # Sprawdzenie czy nie wychodzi poza zakres
+
+push_jal:
+    la $t0, input                   # Wczytanie input do $t0
+    sw $t0, position_pointer        # Zapisanie $t0 do position_pointer
+    jal read_token                  # Wczytanie tokena JAL
+    jal read_token                  # Wczytanie tokena <label>
+    jal stack_push                  # Wywołanie PUSH dla <label>
+
+    la $t0, input                   # Wczytanie input do $t0
+    sw $t0, position_pointer        # Zapisanie $t0 do position_pointer
+    jal read_token                  # Wczytanie tokena JAL
+    jal stack_push                  # Wywołanie PUSH dla JAL
+
+    j valid_msg_func                # Wyświetlenie komunikatu
+
+
+# PARSOWANIE INSTRUKCJI J
+token_is_j:
+    li $t7, 2                       # Wczytanie do $t7 liczby parametrów do porównania
+    bne $t7, $s5, invalid_msg_func  # Sprawdzenie liczby parametrów
+
+    la $t0, input                   # Wczytanie input do $t0
+    sw $t0, position_pointer        # Zapisanie $t0 do position_pointer
+    jal read_token                  # Wczytanie tokena J
+    jal read_token                  # Wczytanie tokena <label>
+    
+    la $a0, token_buf               # wczytanie bufora do $a0
+    lb $t3, 0($a0)                  # Załadowanie pierwszego znaku do $t3
+
+    li $t4, '$'                     # Wczytanie '$' do $t4 do porównania
+    beq $t3, $t4, invalid_msg_func  # Sprawdzenie poprawności parametru
+
+    li $t4, '0'                     # Wczytanie '0' do $t4 do porównania
+    li $t5, '9'                     # Wczytanie '9' do $t4 do porównania
+    slt $t2, $t3, $t4               # Sprawdzenie poprawności parametru
+    bne $t2, $zero, push_j          # Sprawdzenie poprawności parametru
+
+    slt $t2, $t5, $t3               # Sprawdzenie czy nie wychodzi poza zakres
+    beq $t2, $zero, invalid_msg_func # Sprawdzenie czy wychodzi poza zakres
+
+
+push_j:
+    la $t0, input                   # Wczytanie input od $t0    
+    sw $t0, position_pointer        # Zapisanie $t0 do position_pointer
+    jal read_token                  # Wczytaj token J
+    jal read_token                  # Wczytaj token <label>
+    jal stack_push                  # Wykonuj PUSH dla <label>
+
+    la $t0, input                   # Wczytanie input do $t0
+    sw $t0, position_pointer        # Zapisanie $t0 do position_pointer
+    jal read_token                  # Wczytanie tokena J
+    jal stack_push                  # Wykonuj PUSH dla J
+
+    j valid_msg_func                # Wyświetl komunikat
+
+
+# PARSOWANIE FUNKCJI MULT
+token_is_mult:
+    li $t7, 3                       # Wczytanie ilości parametrów do $t7 do porównania
+    bne $t7, $s5, invalid_msg_func  # Sprawdzenie ilości parametrów
+    
+    la $t0, input                   # Załaduj input do $t0
+    sw $t0, position_pointer        # Załaduj do position_pointer $t0
+
+    # token 1 -> MULT
+    jal read_token                  # Wczytaj token
+    
+    li $t6, 0
+
+    # token 2 -> PARAMETR 1
+    jal read_token                  # Wczytaj token
+    la $a0, token_buf               # Wczytaj bufor do $a0
+    lb $t3, 0($a0)                  # Załaduj znak do $t3
+    li $t5, '$'                     # Wczytaj '$' do porównania do $t5
+    bne $t3, $t5, invalid_msg_func  # Sprawdzenie parametru
+    jal czy_cyfra                   # Sprawdzenie czy jest to cyfra
+    beq $v0, $t6, invalid_msg_func  # Walidacja zwróconego parametru
+
+    # token 3 -> PARAMETR 2
+    jal read_token                  # Wczytaj token
+    la $a0, token_buf               # Wczytaj bufor do $a0
+    lb $t3, 0($a0)                  # Załaduj znak do $t3
+    li $t5, '$'                     # Wczytaj '$' do porównania do $t5
+    bne $t3, $t5, invalid_msg_func  # Sprawdzenie parametru
+    jal czy_cyfra                   # Sprawdzenie czy cyfra
+    beq $v0, $t6, invalid_msg_func  # Walidacja zwróconego parametru
+
+    la $t0, input                   # Wczytaj input do $t0
+    sw $t0, position_pointer        # Zapisz $t0 w position_pointer
+    jal read_token                  # Wczytaj token MULT
+    jal read_token                  # Wczytaj token $1
+    jal read_token                  # Wczytaj token $2
+    jal stack_push                  # Wywołaj PUSH dla $2
+    
+    la $t0, input                   # Wczytaj input do $t0
+    sw $t0, position_pointer        # Zapisz $t0 w position_pointer
+    jal read_token                  # Wczytaj token MULT
+    jal read_token                  # Wczytaj token $1
+    jal stack_push                  # Wywołaj PUSH dla $1
+    
+    la $t0, input                   # Wczytaj input od $t0
+    sw $t0, position_pointer        # Zapisz $t0 w position_pointer
+    jal read_token                  # Wczytaj token MULT
+    jal stack_push                  # Wywołaj PUSH dla MULT
+
+    j valid_msg_func                # Wyświetl komunikat
+
+
+# PARSOWANIE INSTRUKCJI JR
+token_is_jr:
+    li $t7, 2                       # Wczytanie liczby parametrów do porównania do $t7
+    bne $t7, $s5, invalid_msg_func  # Sprawdzenie liczby parametrów
+    
+    li $t6, 0                       # Ustawienie wartości 0 do $t6 do porównania
+    
+    la $t0, input                   # Wczytanie input do $t0
+    sw $t0, position_pointer        # Zapisanie $t0 w position_pointer
+    jal read_token                  # Wczytanie tokena JR
+    jal read_token                  # Wczytanie tokena <label>
+
+    la $a0, token_buf               # Wczytanie bufora tokena do $a0
+    lb $t3, 0($a0)                  # Załaduj znak do $t3
+    li $t5, '$'                     # Wczytanie '$' do porównania do $t5
+    bne $t3, $t5, invalid_msg_func  # Walidacja parametru
+    jal czy_cyfra                   # Sprawdź czy cyfra
+    beq $v0, $t6, invalid_msg_func  # Walidacja parametru
+
+    la $t0, input                   # Wczytanie input do $t0
+    sw $t0, position_pointer        # Zapisanie $t0 w position_pointer
+    jal read_token                  # Wczytanie tokena JR
+    jal read_token                  # Wczytanie tokena $1
+    jal stack_push                  # Wywołanie PUSH dla $1
+
+    la $t0, input                   # Wczytanie input do $t0
+    sw $t0, position_pointer        # Zapisanie $t0 w position_pointer
+    jal read_token                  # Wczytanie tokena JR
+    jal stack_push                  # Wywołanie PUSH dla JR
+
+    j valid_msg_func                # Wywołanie komunikatu
+
+
+Is_number:
+    la $t0, token_buf               # Zapisanie bufora tokena do $t0
+
+check_loop_number:
+    lb $t1, 0($t0)                  # Wczytanie znaku do $t1
+    beqz $t1, number_done           # Jezeli znak to 0 -> konczymy sprawdzanie
+
+    li $t2, '0'                     # Wczytanie '0' do $t2 do porównania
+    blt $t1, $t2, not_number        # Sprawdzenie czy mieści się w zakresie
+    li $t2, '9'                     # Wczytanie do '9' do $t2 do porównania
+    bgt $t1, $t2, not_number        # Sprawdzenie cyz mieści się w zakresie
+
+    addi $t0, $t0, 1                # Przeniesienie na kolejny znak
+    j check_loop_number             # Skok do kolejnej iteracji
+
+number_done:
+    li $v0, 1                       # Ustawienie $v0 na 1 -> wynik pozytywny
+    jr $ra                          # Zwrócenie wartości
+
+not_number:
+    li $v0, 0                       # Ustawienie $v0 na 0 -> wynik negatywny
+    jr $ra                          # Zwrócenie wartości
+
+
+czy_cyfra:
+    la $t0, token_buf               # Wczytanie bufora do $t0
+    addi $t0, $t0, 1                # Pominięcie znaku dolara, przesunięcie wskaźnika
+
+    lb $t2, 0($t0)                  # Wczytanie znaku do $t2
+    beq $t2, $zero, digit_fail      # Sprawdzenie parametru
+
+    li $t1, 0                       # Zapisanie wyniku do $t1
+
+
+parse_loop:
+    lb $t2, 0($t0)                  # Wczytanie znaku do $t2
+    beq $t2, $zero, check_range     # Koniec tokena
+
+    li $t3, '0'                     # Wczytanie '0' do $t3 do porównania
+    blt $t2, $t3, digit_fail        # Walidacja zakresu 
+    li $t3, '9'                     # Wczytanie '9' do $t4 do porównania
+    bgt $t2, $t3, digit_fail        # Walidacja zakresu
+
+    addi $t2, $t2, -48              # Zamiana znaku na cyfrę
+    mul $t1, $t1, 10                # Pomnozenie t1 przez 10
+    add $t1, $t1, $t2               # Zapisanie w $t1 sumy $t1 i $t2
+
+    addi $t0, $t0, 1                # Zwiększenie indeksu o 1
+    j parse_loop                    # Kolejna iteracja pętli
+
+check_range:
+    li $t3, 31                      # Wczytanie wartości znaku specjalnego               
+    ble $t1, $t3, digit_ok          # Sprawdzenie czy cyfra jest poprawna
+    j digit_fail                    # Komunikat o niepoprawnej cyfrze
+
+digit_ok:
+    li $v0, 1                       # Wczytanie 1 do wartości do zwrócenia
+    jr $ra                          # Zwrócenie wartości
+
+digit_fail:
+    li $v0, 0                       # Wczytanie 0 do wartości do zwrócenia
+    jr $ra                          # Zwrócenie wartości
+
+
+unknown_token:
+    j invalid_msg_func              # Komunikat nieznanego tokena
+
+
+stack_push:
+    # Oblicz dlugosc tokena
+    la $t1, token_buf               # Wczytanie bufora do $t1
+    li $t2, 0                       # Ustawienie licznika na 0 do $t2
+
+count_length_loop:
+    lb $t3, 0($t1)                  # Załadowanie znaku do $t3
+    beq $t3, $zero, alloc_space     # Sprawdzenie czy nie jest to znak końcowy
+    addi $t2, $t2, 1                # Zwiększenie licznika
+    addi $t1, $t1, 1                # Przesunięcie bufora
+    j count_length_loop             # Przeskok do kolejnej iteracji
+
+alloc_space:
+    addi $t2, $t2, 1                # Dodanie dodatkowego miejsca na znak null
+    sub $sp, $sp, $t2               # Odjecie od $sp $t2 -> rezerwacja miejsca na stosie
+    move $t4, $sp                   # zapisanie miejsca docelowego do $t4
+    la $t1, token_buf               # Załadowanie do $t1 bufora tokena
+
+copy_forward:
+    lb $t3, 0($t1)                  # Wczytanie znaku z bufora
+    sb $t3, 0($t4)                  # Wczytanie wskaznika na stosie
+    beq $t3, $zero, end_push_sp     # Sprawdzenie czy koniec rezerwacji miejsca
+    addi $t1, $t1, 1                # Przesuniecie bufora
+    addi $t4, $t4, 1                # Przesuniecie wskaznika stosu
+    j copy_forward                  # Przeskok kolejnej do iteracji
+
+end_push_sp:
+    jr $ra                          # Zwrócenie wartości
+
+
+# WYŚWIETLANIE WIADOMOŚCI
+valid_msg_func:
+    li $v0, 4                       # Wypisanie komunikatu o poprawnym poleceniu
+    la $a0, valid_msg
+    syscall
+    
+    addi $s1, $s1, 1                # Zwiększenie licznika wykonanych instrukcji
+    j instr_loop                    # Powrót to parsowania
+
+
+invalid_msg_func:
+    li $v0, 4                       # Wyświetlenie komunikatu o błędnej instrukcji
+    la $a0, invalid_msg         
+    syscall
+
+    j instr_loop                    # Powrót do parsowania
+
+
+err_msg_func:
+    li $v0, 4                       # Wyświetlenie komunikatu o bledzie wprowadzenia danych
+    la $a0, err_input_msg
+    syscall
+    
+    la $a0, newline                 # Wyświetlenie nowej linii
+    syscall
+    
+    j main                          # Ponowne zapytanie uzytkownika
+
+
+# ZLICZENIE MIEJSCA NA STOSIE
+memory_allocation_status:
+    subu $t0, $s7, $sp              # Obliczenie zajętej pamięci w $t0 = $s7 - $sp
+
+    li   $v0, 4                     # Wyświetlenie komunikatu o zarezerwowanej pamięci
+    la   $a0, alloc_msg
+    syscall
+
+    li   $v0, 1                     # Wypisanie komunikatu z liczbą bajtów
+    move $a0, $t0
+    syscall
+
+    li   $v0, 4                     # Wypisanie znaku nowej linii
+    la   $a0, newline
+    syscall
+
+    li   $v0, 10
+    syscall
+
+
+# WYŚWIETLANIE STOSU
+exit:
+    li   $v0, 4                     # Wypisanie wiadomosci o wypisywaniu stosu
+    la   $a0, stack_msg
+    syscall
+
+    jal  print_stack                # Rozpoczęcie wyświetlania stosu
+
+    j memory_allocation_status
+
+print_stack:
+    move $t0, $sp                   # Ustawienie $t0 na początek stosu
+
+print_stack_loop:
+    lb $t1, 0($t0)                  # Załadowanie bajtu do $t1
+    beqz $t1, check_next_string     # 
+    
+    move $a0, $t0                   # Wypisanie elementu stosu
+    li $v0, 4
+    syscall
+
+    li $v0, 4                       # Wypisanie nowej linii
+    la $a0, newline
+    syscall
+    
+    j skip_to_next                  # Skok do kolejnego elementu
+
+check_next_string:
+    lb $t1, 0($t0)                  # Załadowanie znaku do $t1
+    beqz $t1, next_idx               # Sprawdzenie czy to nie jest koniec
+
+skip_to_next:
+    lb $t2, 0($t0)                  # Załadowanie znaku do $t2
+    addi $t0, $t0, 1                # Zwiększenie wskaźnika o 1
+    bnez $t2, skip_to_next          # Sprawdzenie czy koniec tokena
+    j print_stack_loop              # Skok do kolejnej iteracji
+
+
+next_idx:
+    addi $t0, $t0, 1                # Zwiększenie indeksu o 1 w $t1
+    lb $t2, 0($t0)                  # Załadowanie kolejnego bajtu do $t2
+    bnez $t2, print_stack_loop      # Sprawdzenie czy to nie koniec tokena
+
+read_token:
+    lw $t0, position_pointer        # Załaduje position_pointer do $t0
+    la $t3, token_buf               # Wczytaj bufor tokena do $t3
+    li $t4, 0                       # Wczytaj 0 do $t4
+    li $v0, 0                       # Ustaw wartość zwracaną na 0
+
+skip_space:
+    lb $t1, 0($t0)                  # Załadowanie znaku do $t1
+    beq $t1, $zero, token_err       # Sprawdzenie czy to nie null
+    li $t2, ' '                     # Załadowanie spacji do porównania do $t2
+    beq $t1, $t2, skip_next         # Sprawdzenie czy znak pomijalny
+    li $t2, ','                     # Załadowanie przecinka do porównania do $t2
+    beq $t1, $t2, skip_next         # Sprawdzenie czy znak pomijalny
+    li $t2, '\n'                    # Załadowanie nowej linii do porównania do $t2
+    beq $t1, $t2, skip_next         # Sprawdzenie czy znak pomijalny
+    j read_loop                     # Kolejna iteracja wczytywania
+
+skip_next:
+    addi $t0, $t0, 1                # Zwiększenie indeksu o 1
+    j skip_space                    # Sprawdzenie kolejnego znaku
+
+read_loop:
+    lb $t1, 0($t0)                  # Wczytanie znaku do $t1
+    beq $t1, $zero, end_token       # Sprawdzenie czy koniec tokena        
+    li $t2, ' '                     # Załadowanie spacji do porównania do $t2
+    beq $t1, $t2, end_token         # Sprawdzenie czy koniec instrukcji
+    li $t2, ','                     # Załadowanie przecinka do porównania do $t2
+    beq $t1, $t2, end_token         # Sprawdzenie czy koniec instrukcji
+    li $t2, '\n'                    # Załadowanie nowej linii do porównania do $t2
+    beq $t1, $t2, end_token         # Sprawdzenie czy koniec instrukcji
+
+    sb $t1, 0($t3)                  # Zapisz bajt do $t1
+    addi $t3, $t3, 1                # Zwiększ pozycję bufora
+    addi $t0, $t0, 1                # Zwiększ position_pointer o 1
+    addi $t4, $t4, 1                # Zwiększ indeks w $t4 o 1
+    j read_loop
+
+end_token:
+    li $t1, 0                       # Wczytanie 0 do $t1
+    sb $t1, 0($t3)                  # Zakończ bufor znakiem null
+    sw $t0, position_pointer        # Aktualizacja position_pointer z $t0
+    jr $ra                          # Zwróć wartość
+
+token_err:
+    li $t1, 0                       # Wczytaj 0 do $t1
+    sb $t1, 0($t3)                  # Zapisz null do bufora
+    li $v0, -1                      # Zmień wartość do zwrócenia
+    jr $ra                          # Zwróć wartość i wróć
