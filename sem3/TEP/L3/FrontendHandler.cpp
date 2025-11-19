@@ -1,6 +1,8 @@
 #include "FrontendHandler.h"
 #include <iostream>
 #include <sstream>
+#include <list>
+#include <map>
 
 const std::string WELCOME_MESSAGE = "Witaj w programie do przetwarzania wyrażeń przy pomocy drzew!\n";
 const std::string COMMAND_PROMPT_INDICATOR = "> ";
@@ -27,14 +29,14 @@ void FrontendHandler::run() {
 
     if (command == "enter") {
       handleEnter(args);
-    // } else if (command == "vars") {
-    //   handleVars();
+    } else if (command == "vars") {
+      handleVars();
     } else if (command == "print") {
       handlePrint();
-    // } else if (command == "comp") {
-    //   handleComp(args);
-    // } else if (command == "join") {
-    //   handleJoin(args);
+    } else if (command == "comp") {
+      handleComp(args);
+    } else if (command == "join") {
+      handleJoin(args);
     } else if (command == "exit" || command == "quit") {
       return;
     } else {
@@ -44,7 +46,6 @@ void FrontendHandler::run() {
 }
 
 void FrontendHandler::handleEnter(std::string args) {
-  // args zawiera np. " + * 5 sin x" (ze spacją na początku)
   tree_->enter(args);
   std::cout << "Drzewo zbudowane." << std::endl;
 }
@@ -53,36 +54,69 @@ void FrontendHandler::handlePrint() {
   tree_->print();
 }
 
-// void FrontendHandler::handleVars() {
-//   std::vector<std::string> vars = tree_.getVars();
-//   std::cout << "Zmienne: ";
-//   for (size_t i = 0; i < vars.size(); i++) {
-//     std::cout << vars[i] << " ";
-//   }
-//   std::cout << std::endl;
-// }
+void FrontendHandler::handleVars() {
+  std::string vars = tree_->getVars();
+  if (vars.empty()) {
+    std::cout << "Brak zmiennych w drzewie." << std::endl;
+  } else {
+    std::cout << "Zmienne: " << vars << std::endl;
+  }
+}
+
+void FrontendHandler::handleComp(std::string args) {
+  std::string varsLine = tree_->getVars();
+
+  std::stringstream vss(varsLine);
+  std::stringstream s(args);
+  std::string var;
+  double value;
+  std::map<std::string,double> valMap;
+  size_t assigned = 0;
+
+  if (!(vss >> var)) {
+    std::stringstream s2(args);
+    if (s2 >> value) {
+      std::cout << "Warning: Drzewo nie zawiera zmiennych ignorowanie wartosci." << std::endl;
+    }
+    try {
+      std::map<std::string,double> emptyMap;
+      double result = tree_->compute(emptyMap);
+      std::cout << "Wynik: " << result << std::endl;
+    } catch (const std::exception &e) {
+      std::cerr << "Blad wyliczania " << e.what() << std::endl;
+    }
+    return;
+  }
+
+  // there is at least one variable (we already read first into 'var')
+  do {
+    if (!(s >> value)) {
+      // not enough values provided
+      // count assigned so far is 'assigned'
+      std::cout << "Ostrzezenie: liczba podanych wartosci (" << assigned << ") nie odpowiada liczbie zmiennych" << std::endl;
+      return;
+    }
+    valMap[var] = value;
+    ++assigned;
+  } while (vss >> var);
+
+  // check for extra provided values
+  if (s >> value) {
+    std::cout << "Ostrzezenie: podano wiecej wartosci niz liczba zmiennych; nadmiar zostanie zignorowany." << std::endl;
+  }
+
+  try {
+    double result = tree_->compute(valMap);
+    std::cout << "Wynik: " << result << std::endl;
+  } catch (const std::exception &e) {
+    std::cout << "Blad podczas obliczania: " << e.what() << std::endl;
+  }
+}
 //
-// void FrontendHandler::handleComp(std::string args) {
-//   // args ma postać: " x 5 y 3"
-//   std::stringstream ss(args);
-//   std::string name;
-//   double val;
-//   std::map<std::string, double> valMap;
-//
-//   // Parsujemy pary: zmienna wartość
-//   while (ss >> name >> val) {
-//     valMap[name] = val;
-//   }
-//
-//   double result = tree_.compute(valMap);
-//   std::cout << "Wynik: " << result << std::endl;
-// }
-//
-// void FrontendHandler::handleJoin(std::string args) {
-//   // args to formuła drugiego drzewa
-//   Tree otherTree;
-//   otherTree.enter(args);
-//
-//   tree_.join(otherTree);
-//   std::cout << "Drzewa polaczone." << std::endl;
-// }
+void FrontendHandler::handleJoin(std::string args) {
+  Tree otherTree;
+  otherTree.enter(args);
+
+  tree_->join(otherTree);
+  std::cout << "Drzewa polaczone." << std::endl;
+}

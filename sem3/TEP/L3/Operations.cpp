@@ -9,15 +9,22 @@ void Operations::registerOperation(const std::string& name, const Operation& op,
 }
 
 double Operations::execute(const std::string& name, double *operands, const int operands_num) {
-  if (operations_.count(name) == 0) {
-    throw std::invalid_argument(std::string("Unknown operation: ") + name);
-  }
   return operations_.at(name)(operands, operands_num);
 }
 
 int Operations::getOperandNum(const std::string& name) {
-  if (operand_num_.count(name) == 0) {
+  std::map<std::string, int>::iterator it = operand_num_.find(name);
+  if (it == operand_num_.end()) {
     return 0;
   }
-  return operand_num_.at(name);
+  return it->second;
+}
+
+bool Operations::isNumber(const std::string& str) {
+  if (str.empty()) {
+    return false;
+  }
+  char *endptr = nullptr;
+  std::strtod(str.c_str(), &endptr);
+  return (*endptr == '\0');
 }

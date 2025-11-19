@@ -16,6 +16,7 @@ public:
     static void registerOperation(const std::string& name, const Operation& op, int operand_num);
     static double execute(const std::string& name, double *operands, int operands_num);
     static int getOperandNum(const std::string& name);
+    static bool isNumber(const std::string& str);
 private:
     static std::map<std::string, Operation> operations_;
     static std::map<std::string, int> operand_num_;

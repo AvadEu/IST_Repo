@@ -20,14 +20,19 @@ public:
   double compute(std::map<std::string, double> &vars);
   void print();
 
-  std::string *getVars();
+  std::string getVars();
   void loadVars(Node* node, std::string *vars);
 private:
   Node* root_;
-  static Node* parse(std::stringstream& ss);
+  Node* parse(std::stringstream& ss);
   void print_helper(const Node* node);
+  bool parse_warning_;
+  bool parse_extra_;
+  std::string extra_tokens_;
   void deconstruct(const Node* node);
-
+  bool findReplaceLeaf(const Node* currentNode, Node* replacement);
+  void getVarsHelper(Node* node, std::map<std::string, bool>& uniqueVars);
+  double computeHelper(const Node* node, const std::map<std::string,double>& vars);
 };
 
 #endif //L3_TREE_H

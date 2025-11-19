@@ -8,13 +8,6 @@ void registerAllOperators();
 int main() {
   registerAllOperators();
   FrontendHandler::run();
-  // std::cout << "Hello, World!" << std::endl;
-  // double *operands = new double[3];
-  // operands[0] = 3.0;
-  // operands[1] = 4.0;
-  // operands[2] = 5.0;
-  // std::cout << Operations::execute("sin", operands, 1) << std::endl;
-  // delete[] operands;
   return 0;
 }
 
@@ -61,4 +54,5 @@ void registerAllOperators() {
   Operations::registerOperation("cos", [](const double *operands, const int operands_num) {
     return std::cos(operands[0]);
   }, 1);
+  // registration completed
 };
