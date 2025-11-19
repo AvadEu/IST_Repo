@@ -1,7 +1,6 @@
 #include "FrontendHandler.h"
 #include <iostream>
 #include <sstream>
-#include <list>
 #include <map>
 
 const std::string WELCOME_MESSAGE = "Witaj w programie do przetwarzania wyrażeń przy pomocy drzew!\n";
@@ -63,6 +62,15 @@ void FrontendHandler::handleVars() {
   }
 }
 
+
+void FrontendHandler::handleJoin(std::string args) {
+  Tree otherTree;
+  otherTree.enter(args);
+
+  tree_->join(otherTree);
+  std::cout << "Drzewa polaczone." << std::endl;
+}
+
 void FrontendHandler::handleComp(std::string args) {
   std::string varsLine = tree_->getVars();
 
@@ -88,21 +96,17 @@ void FrontendHandler::handleComp(std::string args) {
     return;
   }
 
-  // there is at least one variable (we already read first into 'var')
   do {
     if (!(s >> value)) {
-      // not enough values provided
-      // count assigned so far is 'assigned'
-      std::cout << "Ostrzezenie: liczba podanych wartosci (" << assigned << ") nie odpowiada liczbie zmiennych" << std::endl;
+      std::cout << "Warning: liczba podanych wartosci (" << assigned << ") nie odpowiada liczbie zmiennych" << std::endl;
       return;
     }
     valMap[var] = value;
     ++assigned;
   } while (vss >> var);
 
-  // check for extra provided values
   if (s >> value) {
-    std::cout << "Ostrzezenie: podano wiecej wartosci niz liczba zmiennych; nadmiar zostanie zignorowany." << std::endl;
+    std::cout << "Warning: podano wiecej wartosci niz liczba zmiennych; nadmiar zostanie zignorowany." << std::endl;
   }
 
   try {
@@ -111,12 +115,4 @@ void FrontendHandler::handleComp(std::string args) {
   } catch (const std::exception &e) {
     std::cout << "Blad podczas obliczania: " << e.what() << std::endl;
   }
-}
-//
-void FrontendHandler::handleJoin(std::string args) {
-  Tree otherTree;
-  otherTree.enter(args);
-
-  tree_->join(otherTree);
-  std::cout << "Drzewa polaczone." << std::endl;
 }

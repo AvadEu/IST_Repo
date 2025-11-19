@@ -112,7 +112,7 @@ void Tree::join(Tree& otherTree) {
         return;
     }
     if (!otherTree.root_) {
-        std::cerr << "Ostrzezenie: Drugie drzewo jest puste, operacja zignorowana." << std::endl;
+        std::cerr << "Warning: Drugie drzewo jest puste, operacja zignorowana." << std::endl;
         return;
     }
 
