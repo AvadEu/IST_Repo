@@ -8,6 +8,7 @@ set(HEADERS
     Node.h
     Tree.h
     Operations.h
+    FrontendHandler.h
 )
 
 set(SOURCES
@@ -15,6 +16,7 @@ set(SOURCES
     Tree.cpp
     main.cpp
     Operations.cpp
+    FrontendHandler.cpp
 )
 
 add_executable(L3 ${SOURCES} ${HEADERS})

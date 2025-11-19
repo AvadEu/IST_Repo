@@ -9,9 +9,15 @@ void Operations::registerOperation(const std::string& name, const Operation& op,
 }
 
 double Operations::execute(const std::string& name, double *operands, const int operands_num) {
+  if (operations_.count(name) == 0) {
+    throw std::invalid_argument(std::string("Unknown operation: ") + name);
+  }
   return operations_.at(name)(operands, operands_num);
 }
 
 int Operations::getOperandNum(const std::string& name) {
+  if (operand_num_.count(name) == 0) {
+    return 0;
+  }
   return operand_num_.at(name);
 }
