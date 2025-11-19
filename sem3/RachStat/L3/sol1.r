@@ -1,11 +1,11 @@
 # Zad 1
 
 dbinom(x = 5, size = 6, prob = 0.5)
-1 - pbinom(q = 3, size = 6, prob = 0.5)
-sum(dbinom(x = 2:4, size = 6, prob = 0.5))
+1 - pbinom(q = 2, size = 6, prob = 0.5)
+pbinom(4, size=6, prob=0.5) - pbinom(1, size=6, prob=0.5)
 
-x_vals <- 0:10
-y_vals <- dbinom(x = x_vals, size = 10, prob = 0.5)
+x_vals <- 0:6
+y_vals <- dbinom(x = x_vals, size = 6, prob = 0.5)
 
 plot(
     x = x_vals,
@@ -20,8 +20,8 @@ plot(
 
 # Zad 2
 dpois(x = 5, lambda = 6)
-1 - ppois(q = 4, lambda = 6)
-sum(dpois(x = 3:5, lambda = 6))
+1 - ppois(q = 3, lambda = 6)
+ppois(5, lambda = 6) - ppois(2, lambda = 6)
 x_vals <- 0:30
 y_vals <- dpois(x = x_vals, lambda = 6)
 plot(
@@ -30,7 +30,7 @@ plot(
     type = "h",
     main = "Rozklad Poissona zad 2",
     lwd = 4,
-    xlab = "Liczba zdarzen",
+    xlab = "Liczba sprzedanych samochodów",
     ylab = "P(X = x)",
     col = "red"
 )

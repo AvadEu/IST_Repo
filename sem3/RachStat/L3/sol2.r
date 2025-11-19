@@ -11,7 +11,7 @@ pexp(q = 30, rate = lambda, lower.tail = FALSE)
 pexp(q = 20, rate = lambda)
 pexp(q = 80, rate = lambda) - pexp(q = 40, rate = 1 / 15)
 qexp(p = 0.2, rate = lambda, lower.tail = FALSE)
-x_vals <- seq(0, 120, by = 0.5)
+x_vals <- seq(0, 180, by = 0.5)
 y_vals <- dexp(x_vals, rate = lambda)
 plot(
     x = x_vals,
