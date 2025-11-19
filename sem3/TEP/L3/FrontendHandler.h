@@ -14,6 +14,7 @@ private:
   static void handleVars();
   static void handleComp(std::string args);
   static void handleJoin(std::string args);
+  static void handleOptimize();
 };
 
 #endif //L3_FRONTENDHANDLER_H

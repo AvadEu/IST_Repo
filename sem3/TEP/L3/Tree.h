@@ -19,7 +19,7 @@ public:
   void join(Tree &tree);
   double compute(std::map<std::string, double> &vars);
   void print();
-
+  void optimize();
   std::string getVars();
   void loadVars(Node* node, std::string *vars);
 private:
@@ -33,6 +33,7 @@ private:
   bool findReplaceLeaf(const Node* currentNode, Node* replacement);
   void getVarsHelper(Node* node, std::map<std::string, bool>& uniqueVars);
   double computeHelper(const Node* node, const std::map<std::string,double>& vars);
+  bool allChildrenNumbers(const Node* node);
 };
 
 #endif //L3_TREE_H

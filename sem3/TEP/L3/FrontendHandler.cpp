@@ -36,6 +36,8 @@ void FrontendHandler::run() {
       handleComp(args);
     } else if (command == "join") {
       handleJoin(args);
+    } else if (command == "optimize") {
+      handleOptimize();
     } else if (command == "exit" || command == "quit") {
       return;
     } else {
@@ -108,11 +110,16 @@ void FrontendHandler::handleComp(std::string args) {
   if (s >> value) {
     std::cout << "Warning: podano wiecej wartosci niz liczba zmiennych; nadmiar zostanie zignorowany." << std::endl;
   }
-
   try {
     double result = tree_->compute(valMap);
     std::cout << "Wynik: " << result << std::endl;
   } catch (const std::exception &e) {
     std::cout << "Blad podczas obliczania: " << e.what() << std::endl;
   }
+}
+
+void FrontendHandler::handleOptimize() {
+  tree_->optimize();
+  std::cout << "Zoptymalizowane drzewo: " << std::endl;
+  tree_->print();
 }

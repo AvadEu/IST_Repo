@@ -1,6 +1,7 @@
 #include "Tree.h"
 #include "Operations.h"
 #include <iostream>
+#include <queue>
 
 Tree::Tree() {
   root_ = nullptr;
@@ -112,7 +113,7 @@ void Tree::join(Tree& otherTree) {
         return;
     }
     if (!otherTree.root_) {
-        std::cerr << "Warning: Drugie drzewo jest puste, operacja zignorowana." << std::endl;
+        std::cerr << "Ostrzezenie: Drugie drzewo jest puste, operacja zignorowana." << std::endl;
         return;
     }
 
@@ -213,4 +214,41 @@ std::string Tree::getVars() {
   }
 
   return result;
+}
+void Tree::optimize() {
+  if (!root_) return;
+
+  std::queue <Node*> queue;
+  queue.push(root_);
+
+  while (!queue.empty()) {
+    Node* node = queue.front();
+    queue.pop();
+    for (int i = 0; i < node->getChildCount(); i++) {
+      Node* child = node->getChild(i);
+
+      if (allChildrenNumbers(child)) {
+        std::map<std::string, double> uniqueVars;
+        double res = computeHelper(child, uniqueVars);
+        std::cout << res << std::endl;
+        Node* newNode = new Node(std::to_string(res));
+        node->setChild(0, newNode);
+      }
+    }
+
+    for (int i = 0; i < node->getChildCount(); i++) {
+      Node* child = node->getChild(i);
+      queue.push(child);
+    }
+  }
+}
+
+
+bool Tree::allChildrenNumbers(const Node *node) {
+  if (!node) return false;
+  if (node->getChildCount() == 0) return false;
+  for (int i = 0; i < node->getChildCount(); i++) {
+    if (!Operations::isNumber(node->getChild(i)->getValue())) return false;
+  }
+  return true;
 }
