@@ -1,0 +1,1 @@
+1: 2024-12-18 | 100.00zł Zniżka: 10.00% status: Ukończone NIP: 123 Faktura VAT: false -> Płatność BLIK: 10.00zł Tel: 112 | Udane: true2: 2024-12-18 | 150.00zł Zniżka: 0.00% status: Oczekuje na finalizację Zapakowane na prezent: true

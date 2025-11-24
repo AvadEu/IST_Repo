@@ -1,0 +1,7 @@
+Wypłata 1 [Pensja: 5265.0 KartaPersonelu: 10 Nowak]
+Wypłata 2 [Pensja: 5456.0 KartaPersonelu: 10 Nowak]
+Wypłata 3 [Pensja: 5071.0 KartaPersonelu: 10 Nowak]
+Wypłata 4 [Pensja: 5708.0 KartaPersonelu: 11 Wesoły]
+Wypłata 5 [Pensja: 4074.0 KartaPersonelu: 11 Wesoły]
+Wypłata 6 [Pensja: 9126.0 KartaPersonelu: 11 Wesoły]
+Wypłata 16 [Pensja: 1500.0 KartaPersonelu: 35407 Makowski]
