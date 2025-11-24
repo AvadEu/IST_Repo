@@ -2,7 +2,7 @@
 
 dbinom(x = 5, size = 6, prob = 0.5)
 1 - pbinom(q = 2, size = 6, prob = 0.5)
-pbinom(4, size=6, prob=0.5) - pbinom(1, size=6, prob=0.5)
+pbinom(4, size = 6, prob = 0.5) - pbinom(1, size=6, prob=0.5)
 
 x_vals <- 0:6
 y_vals <- dbinom(x = x_vals, size = 6, prob = 0.5)
