@@ -3,6 +3,8 @@
 #include <iostream>
 #include <queue>
 
+using customResult = Result<Tree, Error>;
+
 Tree::Tree() {
   root_ = nullptr;
   parse_warning_ = false;
@@ -251,4 +253,103 @@ bool Tree::allChildrenNumbers(const Node *node) {
     if (!Operations::isNumber(node->getChild(i)->getValue())) return false;
   }
   return true;
+}
+
+customResult Tree::enterRes(const std::string& formula) {
+  parse_warning_ = false;
+  parse_extra_ = false;
+  extra_tokens_.clear();
+
+  deconstruct(root_);
+  std::stringstream ss(formula);
+  root_ = parse(ss);
+
+  std::string leftover;
+  if (ss >> leftover) {
+    extra_tokens_ = leftover;
+    std::string rest;
+    while (ss >> rest) {
+      extra_tokens_ += std::string(" ") + rest;
+    }
+    parse_extra_ = true;
+  }
+
+  if (parse_warning_) {
+    parse_warning_ = false;
+    return Result<Tree, Error>::fail(new Error("Za mała liczba parametrów!"));
+  }
+
+  if (parse_extra_) {
+    parse_extra_ = false;
+    return Result<Tree, Error>::fail(new Error("Za duża liczba operandów. Nadmiarowe tokeny zostaną pominięte."));
+  }
+
+  return Result<Tree, Error>::ok(*(new Tree(*this)));
+}
+
+customResult Tree::createTreeFromFormula(const std::string& formula) {
+  Tree tempTree;
+  tempTree.parse_warning_ = false;
+  tempTree.parse_extra_ = false;
+  tempTree.extra_tokens_.clear();
+
+  std::stringstream ss(formula);
+  tempTree.root_ = tempTree.parse(ss);
+
+  std::string leftover;
+  if (ss >> leftover) {
+    tempTree.extra_tokens_ = leftover;
+    std::string rest;
+    while (ss >> rest) {
+      tempTree.extra_tokens_ += std::string(" ") + rest;
+    }
+    tempTree.parse_extra_ = true;
+  }
+
+  std::vector<Error*> errors;
+
+  if (tempTree.parse_warning_) {
+    errors.push_back(new Error("Za mała liczba parametrów!"));
+  }
+
+  if (tempTree.parse_extra_) {
+    errors.push_back(new Error("Za duża liczba operandów. Nadmiarowe tokeny zostaną pominięte."));
+  }
+
+  if (!errors.empty()) {
+    return Result<Tree, Error>::fail(errors);
+  }
+
+  return Result<Tree, Error>::ok(tempTree);
+}
+
+customResult Tree::createFromFormula(const std::string& formula) {
+  return createTreeFromFormula(formula);
+}
+
+customResult Tree::createAndThrow(const std::string& formula) {
+  return createTreeFromFormula(formula);
+}
+
+std::string Tree::toString_helper(const Node* node) {
+  if (!node) return "";
+
+  std::string result;
+  result += node->getValue();
+  result += " ";
+
+  for (int i = 0; i < node->getChildCount(); i++) {
+    result += toString_helper(node->getChild(i));
+  }
+
+  return result;
+}
+
+std::string Tree::toString() {
+  return toString_helper(root_);
+}
+
+Result<Tree*, Error> Tree::getTree(std::stringstream &formula) {
+  parse(formula);
+  return Result<Tree*, Error>(this);
 }

@@ -1,22 +1,27 @@
 cmake_minimum_required(VERSION 4.0)
-project(L3)
+project(L4)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
 
-set(HEADERS
-    Node.h
-    Tree.h
-    Operations.h
-    FrontendHandler.h
-)
+#set(HEADERS
+#    Node.h
+#    Tree.h
+#    Operations.h
+#    FrontendHandler.h
+#)
 
 set(SOURCES
-    Node.cpp
-    Tree.cpp
-    main.cpp
-    Operations.cpp
-    FrontendHandler.cpp
+    src/Node.cpp
+    src/Tree.cpp
+    src/main.cpp
+    src/Operations.cpp
+    src/FrontendHandler.cpp
+        include/Result.h
+        src/Error.cpp
+        include/FileWriter.h
 )
 
-add_executable(L3 ${SOURCES} ${HEADERS})
+add_executable(L4 ${SOURCES} ${HEADERS})
+
+target_include_directories(L4 PUBLIC ${PROJECT_SOURCE_DIR}/include)
