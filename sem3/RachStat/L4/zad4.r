@@ -1,0 +1,3 @@
+bin <- rbinom(100, size = 10, prob = 0.3)
+
+geom <- rgeom(50, prob = 0.4) # + 1 # Inaczej w r niz w statystyce
