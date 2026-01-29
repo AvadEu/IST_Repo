@@ -1,0 +1,122 @@
+
+```{r}
+bakterie <- read.csv("bakteria.csv", sep = ";", dec = ",")
+mieszkania <- read.csv("mieszkania.csv", sep = ";", dec = ",")
+
+print("Zadanie 1")
+wyniki_obs <- c(171, 200, 168, 213, 226, 222)
+n <- sum(wyniki_obs)
+
+p_oczekiwane <- rep(1 / 6, 6)
+oczekiwane <- n * p_oczekiwane
+print("Oczekiwane frekwencje:")
+print(oczekiwane)
+
+chi_sq_stat <- sum((wyniki_obs - oczekiwane)^2 / oczekiwane)
+print(paste("Statystyka Chi-kwadrat (wyliczona):", round(chi_sq_stat, 4)))
+
+p_val <- 1 - pchisq(chi_sq_stat, df = 5)
+print(paste("Wartość p:", p_val))
+
+if(p_val < 0.05) {
+  cat("Wniosek: Odrzucamy H0. Kostka NIE jest symetryczna (p < 0.05).\n")
+} else {
+  cat("Wniosek: Brak podstaw do odrzucenia H0.\n")
+}
+
+test_chi <- chisq.test(wyniki_obs, p = p_oczekiwane)
+print(test_chi$p.value)
+
+```
+```{r}
+print("Zadanie 2")
+proba_exp <- rexp(1000, rate = 1)
+
+# Hipoteza i: Czy to rozkład normalny N(1,1)?
+ks_norm <- ks.test(proba_exp, "pnorm", mean = 1, sd = 1)
+print(ks_norm)
+#Odrzucamy H0 z poziomem istotnosci 0.1%
+
+# Hipoteza ii: Czy to rozkład wykładniczy Exp(1)?
+ks_exp <- ks.test(proba_exp, "pexp", rate = 1)
+print(ks_exp)
+#Brak podstaw do odrzucenia H0
+
+proba_gamma <- rgamma(1000, shape = 100, scale = 1)
+
+#H0: dane pochodza z rozkladu normalnego N(100,10)
+ks_gamma_norm <- ks.test(proba_gamma, "pnorm", mean = 100, sd = 10)
+ks_gamma_norm
+#Brak podstaw do odrzucenia H0
+
+#H0: dane pochodza z rozkladu gamma z parametrami 100 1
+ks_gamma_gamma <- ks.test(proba_gamma, "pgamma", shape = 100, scale = 1)
+ks_gamma_gamma
+#Brak podstaw do odrzucenia H0
+
+```
+```{r}
+print("Zadanie 3")
+
+mieszkania$Cena_za_m2 <- mieszkania$Cena / mieszkania$Metraz
+
+# a)
+shapiro_cena <- shapiro.test(mieszkania$Cena_za_m2)
+print(shapiro_cena)
+#Odrzucam H0 z poziomem istotnosci 0.1% 
+
+# b)
+shapiro_metraz <- shapiro.test(mieszkania$Metraz)
+print(shapiro_metraz)
+#Odrzucam H0 z poziomem istotnosci 0.1% 
+
+```
+```{r}
+print("Zadanie 4")
+
+# a)
+linreg <- lm(mieszkania$Cena ~ mieszkania$Metraz, data = mieszkania)
+beta0 <- linreg$coefficients["(Intercept)"]
+beta1 <- linreg$coefficients["dane$Metraz"]
+
+
+# b)
+plot(mieszkania$Metraz, mieszkania$Cena,
+    main = "Regresja: Cena vs Metraż",
+    xlab = "Metraż [m^2]", ylab = "Cena [PLN]",
+    pch = 19, col = "blue")
+abline(linreg, col = "red", lwd = 2)
+
+# c)
+reszty <- residuals(linreg)
+shapiro_reszty <- shapiro.test(reszty)
+print(shapiro_reszty)
+#Odrzucam H0 z poziomem istotnosci 0.1%
+
+# d)
+nowe_dane <- data.frame(metraz = 80)
+przewidywana_cena <- predict(linreg, nowe_dane)
+# print(paste("Szacowana cena dla 80 m2:", round(przewidywana_cena, 2), "PLN"))
+
+```
+```{r}
+print("Zadanie 5")
+
+# a)
+plot(bakterie$czas, bakterie$masa,
+    main = "Wzrost masy bakterii",
+    xlab = "Czas", ylab = "Masa",
+    pch = 19, col = "darkgreen")
+
+# b)
+model_bakterie <- lm(log(masa) ~ czas, data = bakterie)
+print(summary(model_bakterie))
+
+# c)
+wspolczynniki <- coef(model_bakterie)
+param_a <- exp(wspolczynniki[1])
+param_b <- wspolczynniki[2]
+
+cat(paste0("\nModel wykładniczy: Masa = ", round(param_a, 4), " * e^(", round(param_b, 4), " * czas)\n"))
+```
+
