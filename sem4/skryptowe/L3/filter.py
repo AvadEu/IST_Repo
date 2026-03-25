@@ -1,7 +1,7 @@
 from typing import List, Tuple, Dict, Any
 from parser import read_log
 from utils import is_valid_ip, extract_extension
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 def sort_log(log : List[Tuple], index : int) -> List[Tuple]:
@@ -207,7 +207,28 @@ def analyze_log(log: List[Tuple]) -> Dict[str, Any]:
     return outcome
 
 
+def get_most_active_ip(log: List[Tuple]) -> str:
+    ip_to_check = set()
+    for record in log:
+        ip_to_check.add(record[2])
+    minimal_time_span = timedelta(100_000)
+    outcome = ''
+    for ip in ip_to_check:
+        records = list(filter((lambda x: x[2] == ip), log))
+        if len(records) < 2:
+            continue
+        curr_time_span = records[1][0] - records[0][0]
+        for i in range(1,len(records) - 1):
+            curr_rec = entry_to_dict(records[i])
+            next_rec = entry_to_dict(records[i + 1])
+            curr_time_span += (next_rec['ts'] - curr_rec['ts'])
+        if curr_time_span < minimal_time_span:
+            minimal_time_span = curr_time_span
+            outcome = ip
+    return outcome
+
+
 if __name__ == "__main__":
     data = read_log()
     dict_data = log_to_dict(data)
-    print(analyze_log(data), sep="\n")
+    print(get_most_active_ip(data), sep="\n")
