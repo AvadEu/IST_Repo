@@ -1,4 +1,4 @@
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Any
 from parser import read_log
 from utils import is_valid_ip, extract_extension
 from datetime import datetime
@@ -85,9 +85,68 @@ def get_top_uris(log: List[Tuple], n=10) -> List[str]:
 
 def count_status_classes(log: List[Tuple]) -> Dict[str, int]:
     status_leaderboard = {
-        ''
+        '2xx': 0,
+        '3xx': 0,
+        '4xx': 0,
+        '5xx': 0
     }
+    for record in log:
+        if record[9] is None:
+            continue
+        key = str(record[9] // 100) + 'xx'
+        status_leaderboard[key] += 1
+    return status_leaderboard
+
+
+def entry_to_dict(entry: Tuple[Any]) -> Dict[str, Any]:
+    outcome = {}
+    outcome['ts'] = entry[0]
+    outcome['uid'] = entry[1]
+    outcome['client_ip'] = entry[2]
+    outcome['client_port'] = entry[3]
+    outcome['server_ip'] = entry[4]
+    outcome['server_port'] = entry[5]
+    outcome['method'] = entry[6]
+    outcome['hostname'] = entry[7]
+    outcome['uri'] = entry[8]
+    outcome['status'] = entry[9]
+    return outcome
+
+
+def log_to_dict(log: List[Tuple]) -> Dict[str, List]:
+    outcome = {}
+    for record in log:
+        record_dict = entry_to_dict(record)
+        if record_dict['uid'] in outcome.keys():
+            outcome[record_dict['uid']].append(record_dict)
+        else:
+            outcome[record_dict['uid']] = [record_dict]
+    return outcome
+
+
+def print_dict_entry_dates(log_dict: Dict[str, List]) -> None:
+    for k, v in log_dict.items():
+        request_count = len(v)
+        methods_leaderboard = {}
+        status_2xx_count = 0
+        print("Sesja: ", k)
+        print("Liczba ządań: ", request_count)
+        for entry in v:
+            print("IP: ", entry['client_ip'], entry['server_ip'], entry['hostname'])
+            method = entry['method']
+            if method in methods_leaderboard.keys():
+                methods_leaderboard[method] += 1
+            else:
+                methods_leaderboard[method] = 1
+            if entry['status'] is not None:
+                if entry['status'] // 100 == 2:
+                    status_2xx_count += 1
+        print("Procentowy udział metod HTTP: ")
+        for method, count in methods_leaderboard.items():
+            print(f'{method}: {count/request_count * 100}%')
+        print(f"Udział 2xx: {status_2xx_count}/{request_count}")
 
 if __name__ == "__main__":
     data = read_log()
-    print(*get_top_uris(data), sep="\n")
+    dict_data = log_to_dict(data)
+    print(print_dict_entry_dates(dict_data), sep="\n")
