@@ -1,3 +1,5 @@
+import re
+
 def is_valid_ip(addr: str) -> bool:
     is_valid = True
     ip_splitted = addr.split(".")
@@ -15,10 +17,11 @@ def is_valid_ip(addr: str) -> bool:
 
 
 def extract_extension(uri: str) -> str:
-    ext_query_str = uri.split('/')[-1]
-    file = ext_query_str.split('?')[0]
-    ext = file.split('.')[-1]
-    return ext
+    outcome = re.findall('\\.([a-zA-Z0-9]+)(?=($|\\?|#))', uri)
+    if outcome:
+        return outcome[0][0]
+    else:
+        return "default"
 
 
 if __name__ == "__main__":
