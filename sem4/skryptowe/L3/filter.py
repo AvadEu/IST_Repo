@@ -186,7 +186,28 @@ def detect_sus(log: List[Tuple], threshold: float) -> List[str]:
             outcome.append(ip)
     return outcome
 
+
+def get_extension_stats(log: List[Tuple]) -> Dict[str, int]:
+    extension_leaderboard = {}
+    for record in log:
+        ext = extract_extension(record[8])
+        if ext in extension_leaderboard.keys():
+            extension_leaderboard[ext] += 1
+        else:
+            extension_leaderboard[ext] = 1
+    return extension_leaderboard
+
+
+def analyze_log(log: List[Tuple]) -> Dict[str, Any]:
+    outcome = {}
+    outcome["Top IP"] = get_top_ips(log, 1)[0][0]
+    outcome['Top URI'] = get_top_uris(log, 1)[0]
+    outcome["Error Count"] = len(get_failed_reads(log, merge=True))
+    outcome["Method stats"] = count_by_method(log)
+    return outcome
+
+
 if __name__ == "__main__":
     data = read_log()
     dict_data = log_to_dict(data)
-    print(print_dict_entry_dates(dict_data), sep="\n")
+    print(analyze_log(data), sep="\n")
