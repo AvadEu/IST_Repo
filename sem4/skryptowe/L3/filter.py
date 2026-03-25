@@ -146,7 +146,38 @@ def print_dict_entry_dates(log_dict: Dict[str, List]) -> None:
             print(f'{method}: {count/request_count * 100}%')
         print(f"Udział 2xx: {status_2xx_count}/{request_count}")
 
+
+def most_active_session(log_dict: Dict[str, List]) -> str:
+    most_requests = 0
+    outcome_uid = ''
+    for k, v in log_dict.items():
+        num_req = len(v)
+        if num_req > most_requests:
+            most_requests = num_req
+            outcome_uid = k
+    return outcome_uid
+
+
+def get_session_paths(log: List[Tuple]) -> Dict[str, List]:
+    outcome = {}
+    log_dict = log_to_dict(log)
+    for k, v in log_dict.items():
+        list_uri = []
+        for entry in v:
+            list_uri.append(entry['uri'])
+        outcome[k] = list_uri
+    return outcome
+
+
+def detect_sus(log: List[Tuple], threshold: float) -> List[str]:
+    outcome = []
+    ips =  get_top_ips(log, 100_000)
+    for ip, count in ips:
+        if count > threshold:
+            outcome.append(ip)
+    return outcome
+
 if __name__ == "__main__":
     data = read_log()
     dict_data = log_to_dict(data)
-    print(print_dict_entry_dates(dict_data), sep="\n")
+    print(detect_sus(data, 3000), sep="\n")
