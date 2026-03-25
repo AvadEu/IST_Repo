@@ -129,9 +129,16 @@ def print_dict_entry_dates(log_dict: Dict[str, List]) -> None:
         request_count = len(v)
         methods_leaderboard = {}
         status_2xx_count = 0
+        min_date = datetime(2050, 1, 1)
+        max_date = datetime.fromtimestamp(1)
         print("Sesja: ", k)
         print("Liczba ządań: ", request_count)
         for entry in v:
+            req_date = entry['ts']
+            if req_date > max_date:
+                max_date = req_date
+            if req_date < min_date:
+                min_date = req_date
             print("IP: ", entry['client_ip'], entry['server_ip'], entry['hostname'])
             method = entry['method']
             if method in methods_leaderboard.keys():
@@ -141,6 +148,8 @@ def print_dict_entry_dates(log_dict: Dict[str, List]) -> None:
             if entry['status'] is not None:
                 if entry['status'] // 100 == 2:
                     status_2xx_count += 1
+        print("Data pierwszego requestu: ", min_date)
+        print("Data ostatniego requestu: ", max_date)
         print("Procentowy udział metod HTTP: ")
         for method, count in methods_leaderboard.items():
             print(f'{method}: {count/request_count * 100}%')
@@ -180,4 +189,4 @@ def detect_sus(log: List[Tuple], threshold: float) -> List[str]:
 if __name__ == "__main__":
     data = read_log()
     dict_data = log_to_dict(data)
-    print(detect_sus(data, 3000), sep="\n")
+    print(print_dict_entry_dates(dict_data), sep="\n")
