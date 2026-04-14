@@ -21,7 +21,7 @@ def extract_extension(uri: str) -> str:
     if outcome:
         return outcome[0][0]
     else:
-        return "default"
+        return ""
 
 
 if __name__ == "__main__":
