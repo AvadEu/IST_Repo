@@ -1,15 +1,14 @@
-from sys import argv
 import os
-from os import environ, listdir, access, X_OK
-from os.path import isfile, join
+from sys import argv
 from typing import List
+from os.path import isfile, join
 
 EXTENSIONS = [".exe", ".bat", ".cmd"]
 PATH_SPLITTER_CHAR = ':'
 
 def get_paths() -> List[str]:
     outcome = []
-    path_var_content = environ["PATH"].split(PATH_SPLITTER_CHAR)
+    path_var_content = os.environ["PATH"].split(PATH_SPLITTER_CHAR)
     for path in path_var_content:
         outcome.append(path)
     return outcome
@@ -34,7 +33,7 @@ def main() -> None:
             for path in get_paths():
                 print(path)
                 try:
-                    for element in listdir(path):
+                    for element in os.listdir(path):
                         if isExecutable(path, element):
                             print(element, end=" ")
                 except FileNotFoundError:

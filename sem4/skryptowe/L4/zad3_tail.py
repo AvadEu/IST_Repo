@@ -1,6 +1,7 @@
 from sys import argv, stdin
 from typing import List
 from pathlib import Path
+import time
 
 
 def tail(file_name: str, lines: int) -> List[str]:
@@ -17,7 +18,12 @@ def tail(file_name: str, lines: int) -> List[str]:
         return file_lines
 
 
-def process_command_line() -> tuple[str, int]:
+def process_command_line() -> tuple[str, int, bool]:
+    follow = False
+    if "--follow" in argv:
+        follow = True
+        argv.remove("--follow")
+
     lines = 10
     file_index = argv.index(Path(__file__).name)
     input_index = file_index + 1
@@ -28,13 +34,33 @@ def process_command_line() -> tuple[str, int]:
                 lines = int(parametr)
                 input_index += 1
     if len(argv) >= input_index + 1:
-        return argv[input_index], lines
+        return argv[input_index], lines, follow
     else:
-        return "", lines
+        return "", lines, follow
+
+
+def main():
+    file_name, lines_count, follow_flag = process_command_line()
     
-
-
-if __name__ == "__main__":
-    tail_lines = tail(*process_command_line())
+    tail_lines = tail(file_name, lines_count)
     for line in tail_lines:
         print(line)
+
+    if follow_flag and file_name != "":
+        try:
+            f = open(file_name, "r")
+            f.seek(0, 2)
+            
+            while True:
+                new_line = f.readline()
+                if new_line:
+                    print(new_line, end="") 
+                else:
+                    time.sleep(0.1)
+        except KeyboardInterrupt:
+            pass
+        finally:
+            f.close()
+
+if __name__ == "__main__":
+    main()

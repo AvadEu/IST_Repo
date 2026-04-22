@@ -60,6 +60,7 @@ def process_output(processed_data: List[dict]) -> dict:
             common_word = meta_dict['MCWord']
             common_word_num = curr_common_word_num
         return {
+            'FilesRead': len(processed_data),
             'SumChars': sum_chars,
             'SumWords': sum_words,
             'SumLines': sum_lines,
