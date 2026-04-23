@@ -40,7 +40,7 @@ def detect_tool(filepath: str) -> str:
 def log_conversion(history_path: str, orig_path: str, target_format: str, out_path: str, tool: str):
     file_exists = os.path.isfile(history_path)
     
-    with open(history_path, mode='a', newline='', encoding='utf-8') as f:
+    with open(history_path, mode='a+', newline='', encoding='utf-8') as f:
         writer = csv.writer(f)
         if not file_exists:
             writer.writerow([

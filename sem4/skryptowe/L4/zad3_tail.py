@@ -2,20 +2,38 @@ from sys import argv, stdin
 from typing import List
 from pathlib import Path
 import time
+import os
 
+DEFAULT_DISPLAY_MODE = 'lines'
 
 def tail(file_name: str, lines: int) -> List[str]:
+    reverse_tail = False
+    if "TAIL_REVERSE" in os.environ.keys():
+        if os.environ['TAIL_REVERSE'] == '1':
+            reverse_tail = True
+
+    display_mode = DEFAULT_DISPLAY_MODE
+    if os.environ.get('TAIL_MODE', '') == 'chars':
+        display_mode = os.environ['TAIL_MODE']
+
     if file_name != "":
         file = open(file_name)
         data = file.read()
         file.close()
     else:
         data = stdin.read()
+    if display_mode == 'chars':
+        output = data[-lines:]
+        return [output]
     file_lines = data.split("\n")
     if lines < len(file_lines):
-        return file_lines[-lines::]
+        output = file_lines[-lines::]
     else:
-        return file_lines
+        output = file_lines
+    if reverse_tail:
+        return list(reversed(output))
+    else:
+        return output
 
 
 def process_command_line() -> tuple[str, int, bool]:
