@@ -64,6 +64,10 @@ def main():
     )
     parser_two.add_argument("-s", "--station", required=True, help="Station name (ex. 'DsBialka')")
 
+    parser_mod = subparsers.add_parser("worst-station",
+        parents=[common]
+    )
+
     args = parser.parse_args()
     base_path = Path(args.path)
     stations_file = base_path / "data" / "stacje.csv"
@@ -89,9 +93,8 @@ def main():
     try:
         measurements_data = parse_measurements(measurements_files / measurement_file)
     except FileNotFoundError:
-        print(measurement_file)
-        print(f"There is no measurements that match given parameters!")
-        sys.exit(0)
+        print(f"There is no file {measurement_file}!")
+        sys.exit(1)
 
     if args.command == "random":
             stations = set()
@@ -113,6 +116,7 @@ def main():
 
         if not measurements_list:
             print(f"No measurements satisfy give criteria!")
+            sys.exit(0)
 
         mean = np.mean(measurements_list)
         std = np.std(measurements_list)
@@ -121,6 +125,22 @@ def main():
         print(f"Unit: {args.unit}")
         print(f"Mean: {mean}")
         print(f"Std: {std}")
+
+    if args.command == "worst-station":
+        station_mean_dict = {}
+        for data_row in measurements_data:
+            station_code = data_row.kod_stacji
+            if is_in_range(data_row.data, args.date_first, args.date_last):
+                if station_code not in station_mean_dict.keys():
+                    station_mean_dict[station_code] = [data_row.wartosc]
+                else:
+                    station_mean_dict[station_code].append(data_row.wartosc)
+        station_mean_dict = {k: float(np.mean(v)) for k, v in station_mean_dict.items()}
+        sorted_outcome = list(sorted(station_mean_dict.items(), key=lambda x: x[1], reverse=True))
+        result = sorted_outcome[0]
+        print(f"Stacja: {result[0]}")
+        print(f"Wartość: {args.unit}")
+        print(f"MaxMean: {result[1]}")
 
 
 if __name__ == "__main__":
