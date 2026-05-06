@@ -76,5 +76,7 @@ def parse_measurements(file_path: str) -> List[NamedTuple]:
 
 
 if __name__ == "__main__":
+    output = parse_stations("./data/stacje.csv")
+    print(output)
     output = parse_measurements('./data/measurements/2023_As(PM10)_24g.csv')
     print(output[1])
