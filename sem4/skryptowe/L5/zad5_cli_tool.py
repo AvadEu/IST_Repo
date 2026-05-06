@@ -5,8 +5,6 @@ from pathlib import Path
 from datetime import datetime
 
 from zad1_parse_data import parse_stations, parse_measurements
-from zad2_group_files import group_measurement_files_by_key
-from zad3_address_parser import get_addresses
 
 import numpy as np
 
