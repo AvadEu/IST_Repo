@@ -1,3 +1,6 @@
+import pandas as pd
+
+
 class Station:
 
     def __init__(
@@ -44,3 +47,40 @@ class Station:
 
     def __hash__(self) -> int:
         return hash(self.code)
+
+    @classmethod
+    def from_row(cls, row: pd.Series) -> "Station":
+        def safe(val):
+            return "" if pd.isna(val) else str(val).strip()
+
+        def safe_float(val):
+            try:
+                return float(val)
+            except (TypeError, ValueError):
+                return None
+
+        return cls(
+            code=safe(row.get("Kod stacji", "")),
+            name=safe(row.get("Nazwa stacji", "")),
+            international_code=safe(row.get("Kod międzynarodowy", "")),
+            station_type=safe(row.get("Typ stacji", "")),
+            area_type=safe(row.get("Typ obszaru", "")),
+            voivodeship=safe(row.get("Województwo", "")),
+            city=safe(row.get("Miejscowość", "")),
+            address=safe(row.get("Adres", "")),
+            lat=safe_float(row.get("WGS84 φ N")),
+            lon=safe_float(row.get("WGS84 λ E")),
+            opened=safe(row.get("Data uruchomienia", "")),
+            closed=safe(row.get("Data zamknięcia", "")),
+        )
+
+    @staticmethod
+    def load_all(path: str) -> dict[str, "Station"]:
+        df = pd.read_csv(path, dtype=str)
+        df.columns = [c.strip() for c in df.columns]
+        stations: dict[str, Station] = {}
+        for _, row in df.iterrows():
+            st = Station.from_row(row)
+            if st.code:
+                stations[st.code] = st
+        return stations
