@@ -1,17 +1,5 @@
-# src/gui/main_window.py
-"""Główne okno aplikacji Log Browser (warstwa GUI, wzorzec master-detail).
-
-Okno odwzorowuje układ ze szkicu specyfikacji:
-
-    * górny pasek – ścieżka do pliku oraz przycisk „Open”,
-    * panel master (lewa strona) – pola wyboru dat „From”/„To” oraz lista logów,
-    * panel detail (prawa strona) – szczegóły zaznaczonego logu,
-    * dolny pasek – przyciski „Previous” i „Next”.
-
-Logika parsowania jest delegowana do warstwy ``src.parser`` i uruchamiana w
-osobnym wątku (``LogLoaderWorker`` + ``QThread``), aby nie blokować GUI.
-"""
-
+# main window, master-detail layout matching the spec sketch.
+# heavy parsing goes to a worker thread, GUI only reacts to its signals.
 from __future__ import annotations
 
 from datetime import date
@@ -41,29 +29,23 @@ from src.parser.models import LogEntry
 
 
 class MainWindow(QWidget):
-    """Główne okno aplikacji realizujące wzorzec master-detail."""
-
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Log browser")
         self.resize(1000, 600)
 
-        # Stan wątku roboczego (utrzymywany jako pola, by nie został usunięty).
+        # keep refs so the thread/worker don't get garbage collected mid-run
         self._thread: Optional[QThread] = None
         self._worker: Optional[LogLoaderWorker] = None
 
-        # Model danych dla widoku master.
         self._model = LogListModel(self)
 
         self._build_ui()
         self._connect_signals()
         self._update_navigation_state()
 
-    # ------------------------------------------------------------------ #
-    # Budowa interfejsu                                                   #
-    # ------------------------------------------------------------------ #
+    # ---- ui building ----
     def _build_ui(self) -> None:
-        """Tworzy i rozmieszcza wszystkie widżety okna."""
         root_layout = QVBoxLayout(self)
 
         root_layout.addLayout(self._build_top_bar())
@@ -76,11 +58,11 @@ class MainWindow(QWidget):
         root_layout.addLayout(self._build_bottom_bar())
 
         self._progress_bar = QProgressBar()
-        self._progress_bar.setVisible(False)
+        self._progress_bar.setVisible(False)  # only shown while loading
         root_layout.addWidget(self._progress_bar)
 
     def _build_top_bar(self) -> QHBoxLayout:
-        """Buduje górny pasek: ścieżka pliku + przycisk otwierania."""
+        # path field + Open button
         layout = QHBoxLayout()
         self._path_edit = QLineEdit()
         self._path_edit.setReadOnly(True)
@@ -91,18 +73,17 @@ class MainWindow(QWidget):
         return layout
 
     def _build_master_panel(self) -> QWidget:
-        """Buduje panel master: filtr dat oraz listę logów."""
+        # left side: From/To date filter + the log list
         panel = QWidget()
         layout = QVBoxLayout(panel)
 
-        # Pasek filtra czasowego (From / To).
         filter_layout = QHBoxLayout()
         self._date_from = QDateEdit()
         self._date_to = QDateEdit()
         for editor in (self._date_from, self._date_to):
             editor.setCalendarPopup(True)
             editor.setDisplayFormat("yyyy-MM-dd")
-            editor.setEnabled(False)
+            editor.setEnabled(False)  # nothing to filter until a file is loaded
         filter_layout.addWidget(QLabel("From"))
         filter_layout.addWidget(self._date_from)
         filter_layout.addSpacing(12)
@@ -111,17 +92,16 @@ class MainWindow(QWidget):
         filter_layout.addStretch(1)
         layout.addLayout(filter_layout)
 
-        # Lista logów (widok master).
         self._list_view = QListView()
         self._list_view.setModel(self._model)
-        self._list_view.setUniformItemSizes(True)  # wydajność dla wielu wierszy
+        self._list_view.setUniformItemSizes(True)  # speeds up big lists
         self._list_view.setEditTriggers(QListView.NoEditTriggers)
         layout.addWidget(self._list_view, stretch=1)
 
         return panel
 
     def _build_detail_panel(self) -> QWidget:
-        """Buduje panel detail: szczegóły zaznaczonego logu."""
+        # right side: details of the selected log
         group = QGroupBox("Szczegóły")
         form = QFormLayout(group)
         form.setLabelAlignment(Qt.AlignRight)
@@ -135,7 +115,7 @@ class MainWindow(QWidget):
         self._detail_size = QLineEdit()
         self._status_indicator = StatusIndicator()
 
-        # Pola szczegółów są tylko do odczytu – prezentują dane, nie edytują ich.
+        # read-only, these just show data
         for field in (
             self._detail_remote_host,
             self._detail_date,
@@ -159,7 +139,7 @@ class MainWindow(QWidget):
         return group
 
     def _build_bottom_bar(self) -> QHBoxLayout:
-        """Buduje dolny pasek nawigacji: przyciski Previous / Next."""
+        # Previous / Next nav buttons
         layout = QHBoxLayout()
         self._prev_button = QPushButton("Previous")
         self._next_button = QPushButton("Next")
@@ -168,11 +148,8 @@ class MainWindow(QWidget):
         layout.addWidget(self._next_button)
         return layout
 
-    # ------------------------------------------------------------------ #
-    # Połączenia sygnałów                                                 #
-    # ------------------------------------------------------------------ #
+    # ---- signal wiring ----
     def _connect_signals(self) -> None:
-        """Łączy sygnały widżetów z odpowiednimi slotami."""
         self._open_button.clicked.connect(self._on_open_clicked)
         self._prev_button.clicked.connect(self._on_previous_clicked)
         self._next_button.clicked.connect(self._on_next_clicked)
@@ -182,11 +159,8 @@ class MainWindow(QWidget):
         selection_model = self._list_view.selectionModel()
         selection_model.currentChanged.connect(self._on_selection_changed)
 
-    # ------------------------------------------------------------------ #
-    # Obsługa wczytywania pliku (wielowątkowość)                          #
-    # ------------------------------------------------------------------ #
+    # ---- file loading (threaded) ----
     def _on_open_clicked(self) -> None:
-        """Otwiera okno wyboru pliku i uruchamia asynchroniczne parsowanie."""
         path, _ = QFileDialog.getOpenFileName(
             self,
             "Otwórz plik z logami",
@@ -200,9 +174,8 @@ class MainWindow(QWidget):
         self._start_loading(path)
 
     def _start_loading(self, path: str) -> None:
-        """Konfiguruje i uruchamia wątek roboczy parsujący plik."""
-        # Blokujemy ponowne otwarcie do czasu zakończenia bieżącej operacji.
-        self._open_button.setEnabled(False)
+        # spin up the worker thread and hook its signals
+        self._open_button.setEnabled(False)  # block re-open while busy
         self._progress_bar.setValue(0)
         self._progress_bar.setVisible(True)
 
@@ -210,13 +183,11 @@ class MainWindow(QWidget):
         self._worker = LogLoaderWorker(path)
         self._worker.moveToThread(self._thread)
 
-        # Start parsowania po uruchomieniu wątku.
         self._thread.started.connect(self._worker.run)
-        # Komunikacja worker → GUI.
         self._worker.progress.connect(self._progress_bar.setValue)
         self._worker.finished.connect(self._on_loading_finished)
         self._worker.error.connect(self._on_loading_error)
-        # Sprzątanie po zakończeniu pracy.
+        # cleanup once done
         self._worker.finished.connect(self._thread.quit)
         self._worker.error.connect(self._thread.quit)
         self._thread.finished.connect(self._cleanup_thread)
@@ -224,7 +195,6 @@ class MainWindow(QWidget):
         self._thread.start()
 
     def _on_loading_finished(self, entries: list) -> None:
-        """Slot wywoływany po pomyślnym wczytaniu wpisów."""
         self._progress_bar.setVisible(False)
         self._open_button.setEnabled(True)
 
@@ -233,18 +203,16 @@ class MainWindow(QWidget):
         self._clear_detail()
 
         if self._model.rowCount() > 0:
-            # Automatyczne zaznaczenie pierwszego wpisu (master-detail).
-            self._select_row(0)
+            self._select_row(0)  # auto-pick first row
         self._update_navigation_state()
 
     def _on_loading_error(self, message: str) -> None:
-        """Slot wywoływany w razie błędu parsowania."""
         self._progress_bar.setVisible(False)
         self._open_button.setEnabled(True)
         QMessageBox.critical(self, "Błąd wczytywania", message)
 
     def _cleanup_thread(self) -> None:
-        """Usuwa referencje do zakończonego wątku i workera."""
+        # drop refs to the finished thread/worker
         if self._worker is not None:
             self._worker.deleteLater()
             self._worker = None
@@ -252,14 +220,11 @@ class MainWindow(QWidget):
             self._thread.deleteLater()
             self._thread = None
 
-    # ------------------------------------------------------------------ #
-    # Filtrowanie po przedziale czasowym                                  #
-    # ------------------------------------------------------------------ #
+    # ---- date range filter ----
     def _configure_date_filters(self) -> None:
-        """Ustawia zakres i wartości domyślne pól dat na podstawie danych."""
+        # set picker range + defaults from the data
         date_range = self._model.full_date_range()
-        # Tymczasowo blokujemy sygnały, aby nie wyzwolić filtrowania w trakcie
-        # ustawiania wartości początkowych.
+        # block signals so setting defaults doesn't trigger a filter pass
         self._date_from.blockSignals(True)
         self._date_to.blockSignals(True)
 
@@ -280,7 +245,6 @@ class MainWindow(QWidget):
         self._date_to.blockSignals(False)
 
     def _on_filter_changed(self) -> None:
-        """Stosuje filtr czasowy po zmianie którejkolwiek z dat."""
         if self._model.is_empty():
             return
 
@@ -293,11 +257,8 @@ class MainWindow(QWidget):
             self._select_row(0)
         self._update_navigation_state()
 
-    # ------------------------------------------------------------------ #
-    # Master-detail: zaznaczenie i prezentacja szczegółów                 #
-    # ------------------------------------------------------------------ #
+    # ---- master-detail selection ----
     def _on_selection_changed(self, current, _previous) -> None:
-        """Aktualizuje panel detail po zmianie zaznaczenia w liście."""
         if current is None or not current.isValid():
             self._clear_detail()
         else:
@@ -307,7 +268,6 @@ class MainWindow(QWidget):
         self._update_navigation_state()
 
     def _show_detail(self, entry: LogEntry) -> None:
-        """Wypełnia pola panelu detail danymi wybranego wpisu."""
         self._detail_remote_host.setText(entry.remote_host)
         self._detail_date.setText(entry.date_text)
         self._detail_time.setText(entry.time_text)
@@ -318,7 +278,6 @@ class MainWindow(QWidget):
         self._status_indicator.set_status_code(entry.status_code)
 
     def _clear_detail(self) -> None:
-        """Czyści wszystkie pola panelu detail."""
         for field in (
             self._detail_remote_host,
             self._detail_date,
@@ -331,27 +290,19 @@ class MainWindow(QWidget):
             field.clear()
         self._status_indicator.set_status_code(None)
 
-    # ------------------------------------------------------------------ #
-    # Nawigacja: Previous / Next                                          #
-    # ------------------------------------------------------------------ #
+    # ---- Previous / Next ----
     def _on_previous_clicked(self) -> None:
-        """Przechodzi do poprzedniego logu na liście."""
         current_row = self._current_row()
         if current_row > 0:
             self._select_row(current_row - 1)
 
     def _on_next_clicked(self) -> None:
-        """Przechodzi do następnego logu na liście."""
         current_row = self._current_row()
         if 0 <= current_row < self._model.rowCount() - 1:
             self._select_row(current_row + 1)
 
     def _update_navigation_state(self) -> None:
-        """Aktywuje/dezaktywuje przyciski nawigacji zależnie od pozycji.
-
-        Przyciski są nieaktywne dla pierwszego (Previous) i ostatniego (Next)
-        elementu listy – zgodnie ze specyfikacją.
-        """
+        # disable Previous on first row and Next on last row
         row_count = self._model.rowCount()
         current_row = self._current_row()
         has_selection = 0 <= current_row < row_count
@@ -359,16 +310,13 @@ class MainWindow(QWidget):
         self._prev_button.setEnabled(has_selection and current_row > 0)
         self._next_button.setEnabled(has_selection and current_row < row_count - 1)
 
-    # ------------------------------------------------------------------ #
-    # Metody pomocnicze                                                   #
-    # ------------------------------------------------------------------ #
+    # ---- helpers ----
     def _current_row(self) -> int:
-        """Zwraca indeks aktualnie zaznaczonego wiersza (lub -1)."""
         index = self._list_view.currentIndex()
         return index.row() if index.isValid() else -1
 
     def _select_row(self, row: int) -> None:
-        """Zaznacza wiersz o podanym indeksie i przewija do niego widok."""
+        # select + scroll into view
         index = self._model.index(row, 0)
         if index.isValid():
             self._list_view.setCurrentIndex(index)
@@ -376,7 +324,7 @@ class MainWindow(QWidget):
 
     @staticmethod
     def _qdate_to_date(q_date: QDate) -> Optional[date]:
-        """Konwertuje :class:`QDate` na standardowy ``datetime.date``."""
+        # QDate -> datetime.date
         if not q_date.isValid():
             return None
         return date(q_date.year(), q_date.month(), q_date.day())

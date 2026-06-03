@@ -1,6 +1,1 @@
-# src/__init__.py
-"""Pakiet źródłowy aplikacji Log Browser.
-
-Aplikacja realizuje wzorzec *master-detail* do przeglądania logów serwera HTTP.
-Warstwa logiki (parser) jest całkowicie odseparowana od warstwy GUI (PySide6).
-"""
+# Log Browser app package (master-detail HTTP log viewer). logic split from gui.

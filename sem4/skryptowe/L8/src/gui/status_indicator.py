@@ -1,15 +1,4 @@
-# src/gui/status_indicator.py
-"""Widżet kolorowego wskaźnika kodu statusu HTTP.
-
-Zgodnie ze szkicem interfejsu kod statusu jest prezentowany w formie kolorowego
-„kółka” z wpisaną wartością liczbową. Kolor zależy od klasy odpowiedzi HTTP:
-
-    * 1xx / 2xx / 3xx → zielony (odpowiedź poprawna / przekierowanie),
-    * 4xx             → pomarańczowy (błąd po stronie klienta),
-    * 5xx             → czerwony (błąd po stronie serwera),
-    * brak danych     → szary.
-"""
-
+# little colored circle with the status code in it (like on the spec sketch)
 from __future__ import annotations
 
 from typing import Optional
@@ -18,35 +7,27 @@ from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPaintEvent
 from PySide6.QtWidgets import QWidget
 
-_COLOR_OK = QColor("#3ec46d")        # zielony
-_COLOR_CLIENT_ERR = QColor("#f0a020")  # pomarańczowy
-_COLOR_SERVER_ERR = QColor("#e04545")  # czerwony
-_COLOR_UNKNOWN = QColor("#9e9e9e")     # szary
+# color per http class: ok=green, client err=orange, server err=red, none=grey
+_COLOR_OK = QColor("#3ec46d")
+_COLOR_CLIENT_ERR = QColor("#f0a020")
+_COLOR_SERVER_ERR = QColor("#e04545")
+_COLOR_UNKNOWN = QColor("#9e9e9e")
 
 
 class StatusIndicator(QWidget):
-    """Okrągły wskaźnik prezentujący kod statusu HTTP wraz z kolorem klasy."""
-
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self._status_code: Optional[int] = None
         self.setMinimumSize(QSize(54, 54))
 
     def sizeHint(self) -> QSize:  # noqa: N802
-        """Sugerowany rozmiar widżetu."""
         return QSize(54, 54)
 
     def set_status_code(self, status_code: Optional[int]) -> None:
-        """Ustawia prezentowany kod statusu i odświeża widżet.
-
-        Args:
-            status_code: Kod statusu HTTP lub ``None`` przy braku danych.
-        """
         self._status_code = status_code
-        self.update()
+        self.update()  # triggers a repaint
 
     def _color_for_status(self) -> QColor:
-        """Dobiera kolor wskaźnika na podstawie klasy kodu statusu."""
         if self._status_code is None:
             return _COLOR_UNKNOWN
         if self._status_code < 400:
@@ -56,11 +37,11 @@ class StatusIndicator(QWidget):
         return _COLOR_SERVER_ERR
 
     def paintEvent(self, event: QPaintEvent) -> None:  # noqa: N802
-        """Rysuje wypełnione kółko z wpisanym kodem statusu."""
+        # draw a filled circle + centered code text
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
 
-        # Kwadratowy, wyśrodkowany obszar rysowania.
+        # square drawing area, centered in the widget
         side = min(self.width(), self.height()) - 4
         x = (self.width() - side) // 2
         y = (self.height() - side) // 2

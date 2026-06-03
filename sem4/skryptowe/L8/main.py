@@ -1,12 +1,4 @@
-# main.py
-"""Punkt wejścia aplikacji Log Browser.
-
-Uruchamia pętlę zdarzeń Qt i wyświetla główne okno aplikacji.
-
-Użycie:
-    python main.py
-"""
-
+# app entry point. run: python main.py
 from __future__ import annotations
 
 import sys
@@ -17,11 +9,7 @@ from src.gui.main_window import MainWindow
 
 
 def main() -> int:
-    """Inicjalizuje aplikację Qt i uruchamia główne okno.
-
-    Returns:
-        Kod wyjścia procesu zwrócony przez pętlę zdarzeń Qt.
-    """
+    # boot Qt, show the window, hand over to the event loop
     app = QApplication(sys.argv)
     app.setApplicationName("Log browser")
 

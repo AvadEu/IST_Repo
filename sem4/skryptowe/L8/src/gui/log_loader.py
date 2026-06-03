@@ -1,13 +1,5 @@
-# src/gui/log_loader.py
-"""Wątek roboczy do asynchronicznego wczytywania i parsowania logów.
-
-Zgodnie z wymaganiami, ciężkie operacje wejścia/wyjścia oraz parsowanie nie
-mogą blokować głównego wątku GUI. Realizujemy to wzorcem *worker-object*:
-obiekt :class:`LogLoaderWorker` (dziedziczący po ``QObject``) jest przenoszony
-do osobnego :class:`QThread`, a komunikacja z GUI odbywa się wyłącznie przez
-sygnały i sloty (bezpieczne wątkowo w Qt).
-"""
-
+# worker that parses the file off the main thread so the GUI doesn't freeze.
+# pattern: QObject worker moved into a QThread, talks back via signals.
 from __future__ import annotations
 
 from typing import List
@@ -19,16 +11,8 @@ from src.parser.models import LogEntry
 
 
 class LogLoaderWorker(QObject):
-    """Obiekt roboczy parsujący plik logów w osobnym wątku.
-
-    Signals:
-        progress: Emitowany z wartością postępu w procentach (0–100).
-        finished: Emitowany po pomyślnym zakończeniu z listą wpisów.
-        error: Emitowany z komunikatem błędu, gdy parsowanie się nie powiedzie.
-    """
-
-    progress = Signal(int)
-    finished = Signal(list)
+    progress = Signal(int)    # 0-100
+    finished = Signal(list)   # list[LogEntry]
     error = Signal(str)
 
     def __init__(self, path: str) -> None:
@@ -38,11 +22,11 @@ class LogLoaderWorker(QObject):
         self._cancelled = False
 
     def cancel(self) -> None:
-        """Zleca przerwanie trwającego parsowania (sprawdzane okresowo)."""
+        # checked every now and then inside the parse loop
         self._cancelled = True
 
     def run(self) -> None:
-        """Wykonuje parsowanie pliku; przeznaczone do uruchomienia w wątku."""
+        # entry point that runs inside the thread
         try:
             entries: List[LogEntry] = self._parser.parse_file(
                 self._path,
@@ -50,17 +34,16 @@ class LogLoaderWorker(QObject):
                 is_cancelled=lambda: self._cancelled,
             )
             if self._cancelled:
-                # Przerwano – nie emitujemy wyniku, jedynie kończymy cicho.
-                self.finished.emit([])
+                self.finished.emit([])  # bailed out, just finish quietly
                 return
             self.finished.emit(entries)
         except LogParseError as exc:
             self.error.emit(str(exc))
-        except Exception as exc:  # noqa: BLE001 – zabezpieczenie ostatniej szansy
+        except Exception as exc:  # noqa: BLE001 - last resort so the thread never dies silently
             self.error.emit(f"Nieoczekiwany błąd podczas parsowania: {exc}")
 
     def _on_progress(self, processed: int, total: int) -> None:
-        """Przelicza postęp na procenty i emituje sygnał."""
+        # bytes -> percent
         if total <= 0:
             return
         percent = int(processed * 100 / total)
