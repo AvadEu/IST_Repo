@@ -1,0 +1,6 @@
+# Zadania 1–3 (wersja podstawowa) korzystają wyłącznie z biblioteki
+# standardowej (sqlite3, csv, zipfile) – nie wymagają instalacji.
+#
+# Poniższe zależności są potrzebne tylko dla "Wersji dla ambitnych":
+SQLAlchemy>=2.0      # ORM (create_database_orm.py, load_data_orm.py)
+Flask>=3.0           # webowy interfejs Zadania 3 (app.py)

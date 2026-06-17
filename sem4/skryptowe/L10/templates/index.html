@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rozkład jazdy GTFS – analiza przystanków</title>
+  <style>
+    :root { --bg:#0f172a; --card:#1e293b; --accent:#38bdf8; --text:#e2e8f0; --muted:#94a3b8; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+           background: var(--bg); color: var(--text); }
+    header { padding: 1.5rem 2rem; border-bottom:1px solid #334155; }
+    h1 { margin:0; font-size:1.4rem; }
+    .sub { color: var(--muted); font-size:.9rem; margin-top:.25rem; }
+    main { display:flex; gap:1.5rem; padding:1.5rem 2rem; flex-wrap:wrap; }
+    .panel { background: var(--card); border:1px solid #334155; border-radius:12px; padding:1.25rem; }
+    .search { flex: 1 1 320px; max-width:420px; }
+    .results { flex: 2 1 480px; }
+    input[type=text] { width:100%; padding:.6rem .8rem; border-radius:8px; border:1px solid #475569;
+                       background:#0b1220; color:var(--text); font-size:1rem; }
+    .stoplist { margin-top:1rem; max-height:65vh; overflow:auto; }
+    .stop-item { padding:.55rem .7rem; border-radius:8px; cursor:pointer; border:1px solid transparent; }
+    .stop-item:hover { background:#0b1220; border-color:#334155; }
+    .stop-item .code { color:var(--muted); font-size:.8rem; }
+    .count { color:var(--muted); font-size:.85rem; margin-top:.5rem; }
+    .cards { display:grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap:.8rem; }
+    .stat { background:#0b1220; border:1px solid #334155; border-radius:10px; padding:.9rem; }
+    .stat .label { color:var(--muted); font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; }
+    .stat .value { font-size:1.5rem; font-weight:600; margin-top:.25rem; color:var(--accent); }
+    h2 { font-size:1.1rem; margin:1.4rem 0 .6rem; }
+    h3 { font-size:.95rem; color:var(--muted); margin:1.2rem 0 .5rem; font-weight:600; }
+    table { width:100%; border-collapse: collapse; font-size:.9rem; }
+    th, td { text-align:left; padding:.45rem .6rem; border-bottom:1px solid #334155; }
+    th { color:var(--muted); font-weight:600; }
+    td.num, th.num { text-align:right; font-variant-numeric: tabular-nums; }
+    .placeholder { color:var(--muted); padding:2rem 0; text-align:center; }
+    .bar { height:6px; background:var(--accent); border-radius:3px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Rozkład jazdy GTFS — analiza przystanków</h1>
+    <div class="sub">Wybierz przystanek z listy, aby zobaczyć statystyki odjazdów (Zadanie 3).</div>
+  </header>
+  <main>
+    <section class="panel search">
+      <input type="text" id="q" placeholder="Szukaj przystanku po nazwie…" autocomplete="off">
+      <div class="count" id="count"></div>
+      <div class="stoplist" id="stoplist"></div>
+    </section>
+
+    <section class="panel results">
+      <div id="result"><div class="placeholder">Nie wybrano przystanku.</div></div>
+    </section>
+  </main>
+
+  <script>
+    const q = document.getElementById('q');
+    const stoplist = document.getElementById('stoplist');
+    const countEl = document.getElementById('count');
+    const result = document.getElementById('result');
+    let timer = null;
+
+    async function loadStops(term) {
+      const res = await fetch('/api/stops?q=' + encodeURIComponent(term));
+      const data = await res.json();
+      countEl.textContent = data.count + ' przystanków' +
+        (data.count > data.stops.length ? ' (pokazano ' + data.stops.length + ')' : '');
+      stoplist.innerHTML = '';
+      for (const s of data.stops) {
+        const div = document.createElement('div');
+        div.className = 'stop-item';
+        div.innerHTML = '<div>' + escapeHtml(s.stop_name) + '</div>' +
+          '<div class="code">kod ' + (s.stop_code || '—') + ' · id ' + s.stop_id + '</div>';
+        div.onclick = () => loadStop(s.stop_id);
+        stoplist.appendChild(div);
+      }
+    }
+
+    async function loadStop(stopId) {
+      result.innerHTML = '<div class="placeholder">Ładowanie…</div>';
+      const res = await fetch('/api/stop/' + encodeURIComponent(stopId));
+      const d = await res.json();
+      if (d.error) { result.innerHTML = '<div class="placeholder">' + d.error + '</div>'; return; }
+      const maxDep = Math.max(...d.headsigns.map(h => h.departures), 1);
+
+      result.innerHTML = `
+        <h2>${escapeHtml(d.stop.stop_name)} <span class="code" style="color:var(--muted);font-size:.8rem;">
+          (kod ${d.stop.stop_code || '—'} · id ${d.stop.stop_id})</span></h2>
+        <div class="cards">
+          <div class="stat"><div class="label">Różne linie (a)</div><div class="value">${d.routes_count}</div></div>
+          <div class="stat"><div class="label">Liczba odjazdów (b)</div><div class="value">${d.departures_count}</div></div>
+          <div class="stat"><div class="label">Najwcześniejszy (c)</div><div class="value">${d.earliest || '—'}</div></div>
+          <div class="stat"><div class="label">Najpóźniejszy (c)</div><div class="value">${d.latest || '—'}</div></div>
+        </div>
+
+        <h3>d) Najczęstsze kierunki odjazdów</h3>
+        <table><thead><tr><th>Kierunek</th><th class="num">Odjazdy</th><th>Udział</th></tr></thead><tbody>
+          ${d.headsigns.map(h => `<tr>
+            <td>${escapeHtml(h.headsign)}</td>
+            <td class="num">${h.departures}</td>
+            <td><div class="bar" style="width:${Math.round(100*h.departures/maxDep)}%"></div></td>
+          </tr>`).join('')}
+        </tbody></table>
+
+        <h3>e) Zestawienie linii (połączenie 3 tabel + grupowanie)</h3>
+        <table><thead><tr>
+          <th>Linia</th><th class="num">Odjazdy</th><th class="num">Kier.</th>
+          <th class="num">Pierwszy</th><th class="num">Ostatni</th><th>Nazwa trasy</th>
+        </tr></thead><tbody>
+          ${d.breakdown.map(r => `<tr>
+            <td>${escapeHtml(r.line || '?')}</td>
+            <td class="num">${r.departures}</td>
+            <td class="num">${r.directions}</td>
+            <td class="num">${r.first}</td>
+            <td class="num">${r.last}</td>
+            <td>${escapeHtml((r.line_name || '').slice(0,60))}</td>
+          </tr>`).join('')}
+        </tbody></table>
+      `;
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c =>
+        ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    q.addEventListener('input', () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => loadStops(q.value.trim()), 200);
+    });
+
+    loadStops('');
+  </script>
+</body>
+</html>
