@@ -1,8 +1,3 @@
-"""Zapytania SQL dla Zadania 3 (analiza wybranego przystanku).
-
-Logika zapytań jest wydzielona tutaj, aby współdzielić ją między
-interfejsem tekstowym (query_stop.py) a webowym (app.py).
-"""
 from __future__ import annotations
 
 import sqlite3

@@ -22,7 +22,6 @@ BATCH_SIZE = 10_000
 
 
 def _i(value: str | None) -> int | None:
-    """Konwersja na int z obsługą pustych wartości."""
     if value is None or value.strip() == "":
         return None
     try:

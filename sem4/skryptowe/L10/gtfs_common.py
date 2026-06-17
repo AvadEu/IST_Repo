@@ -1,8 +1,3 @@
-"""Wspólne narzędzia do czytania paczek GTFS.
-
-Obsługuje zarówno paczkę ZIP, jak i katalog z plikami ``*.txt``
-(pliki GTFS mają strukturę CSV oddzielonego przecinkami).
-"""
 from __future__ import annotations
 
 import csv
@@ -14,11 +9,6 @@ from typing import Iterator
 
 
 def time_to_seconds(value: str | None) -> int | None:
-    """Zamienia godzinę ``HH:MM:SS`` na liczbę sekund od początku doby.
-
-    GTFS dopuszcza godziny przekraczające 24:00:00 (kursy po północy),
-    dlatego nie korzystamy z ``datetime.time``.
-    """
     if value is None:
         return None
     value = value.strip()
@@ -35,8 +25,6 @@ def time_to_seconds(value: str | None) -> int | None:
 
 
 class GtfsSource:
-    """Abstrakcja źródła GTFS: plik ZIP albo katalog z plikami .txt."""
-
     def __init__(self, path: str):
         if not os.path.exists(path):
             raise FileNotFoundError(f"Nie znaleziono źródła GTFS: {path}")

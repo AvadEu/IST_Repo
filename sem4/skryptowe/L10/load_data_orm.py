@@ -1,13 +1,3 @@
-#!/usr/bin/env python3
-"""Wersja dla ambitnych – Zadanie 2 z użyciem ORM (SQLAlchemy).
-
-Importuje dane GTFS przy użyciu modeli ORM oraz wykonuje na koniec
-przykładowe zapytanie agregujące zrealizowane środkami ORM.
-
-Wywołanie:
-    python load_data_orm.py data my_timetable_orm
-    python load_data_orm.py OtwartyWroclaw_GTFS.zip my_timetable_orm
-"""
 from __future__ import annotations
 
 import argparse
@@ -176,7 +166,7 @@ def main(argv: list[str] | None = None) -> int:
     db_path = db_filename(args.database)
 
     if args.create or not os.path.exists(db_path):
-        create_database_orm(db_path, overwrite=args.create)
+        create_database_orm(db_path)
         print(f"Utworzono strukturę bazy (ORM): {db_path}")
 
     try:

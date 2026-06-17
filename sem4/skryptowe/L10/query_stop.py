@@ -1,17 +1,3 @@
-#!/usr/bin/env python3
-"""Zadanie 3: interaktywna analiza wybranego przystanku (interfejs tekstowy).
-
-Wywołanie:
-    python query_stop.py my_timetable
-
-Użytkownik wyszukuje i wybiera przystanek z listy, a skrypt – za pomocą
-zapytań SQL typu SELECT – wyświetla:
-  a) liczbę różnych linii zatrzymujących się na przystanku,
-  b) liczbę odjazdów z przystanku,
-  c) najwcześniejszy i najpóźniejszy odjazd,
-  d) najczęstsze kierunki odjazdów,
-  e) nietrywialne zestawienie linii (połączenie 3 tabel + grupowanie).
-"""
 from __future__ import annotations
 
 import argparse

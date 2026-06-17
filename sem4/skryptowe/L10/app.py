@@ -1,13 +1,3 @@
-#!/usr/bin/env python3
-"""Wersja dla ambitnych – Zadanie 3 z webowym interfejsem użytkownika (Flask).
-
-Wywołanie:
-    python app.py my_timetable
-    # następnie otwórz http://127.0.0.1:5000 w przeglądarce
-
-Interfejs pozwala wyszukać i wybrać przystanek, a następnie wyświetla
-te same statystyki, co wersja tekstowa (Zadanie 3 a–e).
-"""
 from __future__ import annotations
 
 import argparse
