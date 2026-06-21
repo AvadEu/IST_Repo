@@ -1,0 +1,14 @@
+services:
+  bot:
+    build: .
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - db_data:/data
+      - audio_data:/data/audio
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  audio_data:
