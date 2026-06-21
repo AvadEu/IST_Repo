@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import discord
 from discord import app_commands
@@ -7,9 +7,11 @@ from pydantic import ValidationError
 
 from db.session import AsyncSessionLocal
 from schemas.schemas import MeetingCreate
-from services import meeting_service
+from services import meeting_service, reminder_service
 
 DATETIME_FORMAT = "%Y-%m-%d %H:%M"
+# auto-przypomnienie DM dla twórcy: ile minut przed startem spotkania
+AUTO_REMINDER_MINUTES = 10
 
 
 def _parse_dt(value: str) -> datetime:
@@ -67,6 +69,20 @@ class MeetingsCog(commands.Cog):
             )
             async with AsyncSessionLocal() as db:
                 meeting = await meeting_service.create_meeting(db, data)
+
+                # auto-przypomnienie DM dla twórcy, AUTO_REMINDER_MINUTES przed startem
+                remind_at = meeting.start_time - timedelta(minutes=AUTO_REMINDER_MINUTES)
+                reminder_added = remind_at < meeting.start_time
+                if reminder_added:
+                    await reminder_service.create_reminder(
+                        db,
+                        meeting.id,
+                        "user",
+                        str(interaction.user.id),
+                        remind_at,
+                        f"Przypomnienie: spotkanie „{meeting.title}” zaczyna się "
+                        f"o {meeting.start_time.strftime(DATETIME_FORMAT)}.",
+                    )
         except (ValidationError, ValueError) as exc:
             await interaction.response.send_message(f"Błąd: {exc}", ephemeral=True)
             return
@@ -83,6 +99,13 @@ class MeetingsCog(commands.Cog):
         embed.add_field(
             name="Koniec", value=meeting.end_time.strftime(DATETIME_FORMAT)
         )
+        if reminder_added:
+            embed.add_field(
+                name="Przypomnienie",
+                value=f"DM {AUTO_REMINDER_MINUTES} min przed startem "
+                f"({remind_at.strftime(DATETIME_FORMAT)})",
+                inline=False,
+            )
         await interaction.response.send_message(embed=embed)
 
     @group.command(name="list", description="Lista nadchodzących spotkań")
