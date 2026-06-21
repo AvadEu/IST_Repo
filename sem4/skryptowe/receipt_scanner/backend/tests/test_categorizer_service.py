@@ -4,13 +4,28 @@ from app.services import categorizer_service
 
 
 def test_categorize_by_store_name():
-    """Rozpoznany sklep przypisuje swoją kategorię wszystkim pozycjom."""
+    """Nierozpoznane pozycje dziedziczą kategorię sklepu."""
     items = [
         {"name": "jakiś dziwny produkt xyz", "amount": Decimal("4.50")},
         {"name": "inny nieznany towar", "amount": Decimal("2.00")},
     ]
     result = categorizer_service.categorize_receipt("Biedronka", items)
     assert all(item["category"] == "Jedzenie" for item in result)
+
+
+def test_item_category_overrides_store():
+    """Pozycja rozpoznana po nazwie NIE jest hurtem klasyfikowana jak sklep."""
+    items = [
+        {"name": "ChustHigDelik 150szt", "amount": Decimal("3.99")},  # higiena → Dom
+        {"name": "Sok jabłkowy 1l", "amount": Decimal("4.99")},        # → Jedzenie
+        {"name": "Paracetamol tabletki", "amount": Decimal("8.00")},   # leki → Zdrowie
+        {"name": "nieznany xyz", "amount": Decimal("1.00")},           # → sklep (Jedzenie)
+    ]
+    result = categorizer_service.categorize_receipt("Biedronka", items)
+    cats = [it["category"] for it in result]
+    assert cats == ["Dom", "Jedzenie", "Zdrowie", "Jedzenie"]
+    # kluczowe: nie wszystko jest Jedzeniem
+    assert len(set(cats)) > 1
 
 
 def test_categorize_item_keyword():
