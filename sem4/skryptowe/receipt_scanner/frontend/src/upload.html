@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload paragonu — Receipt Scanner</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav>
+    <a href="upload.html" class="active">Upload</a>
+    <a href="receipts.html">Paragony</a>
+    <a href="dashboard.html">Dashboard</a>
+  </nav>
+  <main>
+    <h1>Dodaj paragon</h1>
+    <div class="card">
+      <div id="dropzone" class="dropzone">
+        <p>Przeciągnij i upuść zdjęcie paragonu<br>lub kliknij, aby wybrać plik</p>
+        <small>Obsługiwane formaty: JPEG, PNG (max 10 MB)</small>
+        <input type="file" id="fileInput" accept="image/jpeg,image/png" hidden>
+      </div>
+
+      <img id="preview" class="preview" hidden alt="Podgląd paragonu">
+
+      <div style="margin-top:16px; display:flex; gap:8px;">
+        <button id="uploadBtn" disabled>Wyślij paragon</button>
+        <button id="resetBtn" class="secondary" hidden>Wyczyść</button>
+      </div>
+
+      <progress id="progress" max="100" value="0" hidden></progress>
+      <div id="message"></div>
+    </div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/upload.js"></script>
+</body>
+</html>

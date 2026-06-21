@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paragony — Receipt Scanner</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav>
+    <a href="upload.html">Upload</a>
+    <a href="receipts.html" class="active">Paragony</a>
+    <a href="dashboard.html">Dashboard</a>
+  </nav>
+  <main>
+    <h1>Paragony</h1>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>Miniatura</th>
+            <th>Sklep</th>
+            <th>Data</th>
+            <th>Kwota</th>
+            <th>Akcje</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div id="empty" class="empty" hidden>Brak paragonów — dodaj pierwszy w zakładce Upload.</div>
+      <div class="pagination">
+        <button id="prevBtn" class="secondary">Poprzednia</button>
+        <span id="pageInfo">Strona 1</span>
+        <button id="nextBtn" class="secondary">Następna</button>
+      </div>
+    </div>
+  </main>
+
+  <div id="modalContainer"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/receipts.js"></script>
+</body>
+</html>
