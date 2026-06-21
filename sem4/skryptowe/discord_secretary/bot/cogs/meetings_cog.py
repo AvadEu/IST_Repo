@@ -3,6 +3,7 @@ from datetime import datetime
 import discord
 from discord import app_commands
 from discord.ext import commands
+from pydantic import ValidationError
 
 from db.session import AsyncSessionLocal
 from schemas.schemas import MeetingCreate
@@ -47,21 +48,26 @@ class MeetingsCog(commands.Cog):
             )
             return
 
-        channel_id = str(channel.id) if channel else str(interaction.channel_id)
-        data = MeetingCreate(
-            title=title,
-            description=description,
-            start_time=start_dt,
-            end_time=end_dt,
-            channel_id=channel_id,
-            guild_id=str(interaction.guild_id),
-            created_by=str(interaction.user.id),
-        )
+        if end_dt <= start_dt:
+            await interaction.response.send_message(
+                "Koniec spotkania musi być późniejszy niż początek.", ephemeral=True
+            )
+            return
 
+        channel_id = str(channel.id) if channel else str(interaction.channel_id)
         try:
+            data = MeetingCreate(
+                title=title,
+                description=description,
+                start_time=start_dt,
+                end_time=end_dt,
+                channel_id=channel_id,
+                guild_id=str(interaction.guild_id),
+                created_by=str(interaction.user.id),
+            )
             async with AsyncSessionLocal() as db:
                 meeting = await meeting_service.create_meeting(db, data)
-        except ValueError as exc:
+        except (ValidationError, ValueError) as exc:
             await interaction.response.send_message(f"Błąd: {exc}", ephemeral=True)
             return
 
