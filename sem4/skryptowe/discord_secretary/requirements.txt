@@ -1,6 +1,8 @@
-# 2.6.4, nie 2.7.x: 2.7.1 wprowadza regresję psującą dekodowanie audio w
-# discord-ext-voice-recv (opus → szum). 2.6.4 ma już nowe szyfrowanie głosu.
-discord.py[voice]==2.6.4
+# 2.7.1: wymagane, by w ogóle połączyć się z głosem — od 1 marca 2026 Discord
+# wymusza E2EE (protokół DAVE) i odrzuca starsze klienty kodem 4017. Uwaga:
+# discord-ext-voice-recv nie deszyfruje jeszcze warstwy DAVE, więc odbierane
+# audio bywa uszkodzone (upstream, issue #53) — patrz bot/cogs/recording_cog.py.
+discord.py[voice]==2.7.1
 discord-ext-voice-recv==0.5.2a179
 PyNaCl==1.5.0
 fastapi==0.115.0
