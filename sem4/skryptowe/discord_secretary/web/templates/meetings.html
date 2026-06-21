@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Spotkania — Secretary{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>Spotkania</h1>
+  <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#newMeeting">
+    Nowe spotkanie
+  </button>
+</div>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>ID</th><th>Tytuł</th><th>Początek</th><th>Koniec</th>
+      <th>Kanał</th><th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for m in meetings %}
+    <tr>
+      <td>{{ m.id }}</td>
+      <td>{{ m.title }}</td>
+      <td>{{ m.start_time.strftime("%Y-%m-%d %H:%M") }}</td>
+      <td>{{ m.end_time.strftime("%Y-%m-%d %H:%M") }}</td>
+      <td>{{ m.channel_id }}</td>
+      <td>
+        <button class="btn btn-sm btn-outline-danger"
+                onclick="cancelMeeting({{ m.id }})">Anuluj</button>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="6" class="text-muted">Brak spotkań.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<div class="modal fade" id="newMeeting" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="meetingForm">
+        <div class="modal-header">
+          <h5 class="modal-title">Nowe spotkanie</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Tytuł</label>
+            <input class="form-control" name="title" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Opis</label>
+            <textarea class="form-control" name="description"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Początek</label>
+            <input type="datetime-local" class="form-control" name="start_time" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Koniec</label>
+            <input type="datetime-local" class="form-control" name="end_time" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">ID kanału</label>
+            <input class="form-control" name="channel_id" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">ID serwera</label>
+            <input class="form-control" name="guild_id" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+          <button type="submit" class="btn btn-success">Utwórz</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function cancelMeeting(id) {
+  if (!confirm("Anulować spotkanie #" + id + "?")) return;
+  const res = await fetch("/api/meetings/" + id, { method: "DELETE" });
+  if (res.ok) location.reload();
+  else alert("Nie udało się anulować.");
+}
+
+document.getElementById("meetingForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const payload = {
+    title: form.title.value,
+    description: form.description.value || null,
+    start_time: form.start_time.value,
+    end_time: form.end_time.value,
+    channel_id: form.channel_id.value,
+    guild_id: form.guild_id.value,
+    created_by: "web",
+  };
+  const res = await fetch("/api/meetings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (res.ok) location.reload();
+  else {
+    const err = await res.json();
+    alert("Błąd: " + (err.detail || res.status));
+  }
+});
+</script>
+{% endblock %}

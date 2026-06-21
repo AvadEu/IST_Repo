@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Przypomnienia — Secretary{% endblock %}
+{% block content %}
+<h1 class="mb-4">Przypomnienia</h1>
+
+{% for meeting_id, items in grouped.items() %}
+  <h4 class="mt-4">Spotkanie #{{ meeting_id }}</h4>
+  <table class="table table-sm table-striped">
+    <thead>
+      <tr><th>ID</th><th>Cel</th><th>Kiedy</th><th>Treść</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+    {% for r in items %}
+      <tr>
+        <td>{{ r.id }}</td>
+        <td>{{ r.target_type }}: {{ r.target_id }}</td>
+        <td>{{ r.remind_at.strftime("%Y-%m-%d %H:%M") }}</td>
+        <td>{{ r.message }}</td>
+        <td>
+          {% if r.sent %}
+            <span class="badge text-bg-success">wysłane</span>
+          {% else %}
+            <span class="badge text-bg-warning">oczekuje</span>
+          {% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="text-muted">Brak przypomnień.</p>
+{% endfor %}
+{% endblock %}
