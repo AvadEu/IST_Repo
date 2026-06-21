@@ -2,6 +2,10 @@ services:
   bot:
     build: .
     env_file: .env
+    environment:
+      # zegar kontenera = czas lokalny, żeby pasował do godzin wpisywanych
+      # w komendach (porównanie remind_at <= datetime.now() w schedulerze)
+      TZ: ${TZ:-Europe/Warsaw}
     ports:
       - "8000:8000"
     volumes:

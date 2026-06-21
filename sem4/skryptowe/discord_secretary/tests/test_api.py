@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import (
 )
 from sqlalchemy.pool import StaticPool
 
+from config import settings
 from db.session import Base, get_db
 import models.models  # noqa: F401
 from web.app import app
@@ -48,7 +49,9 @@ def _meeting_payload(**overrides):
         "start_time": "2030-06-15T14:00:00",
         "end_time": "2030-06-15T14:30:00",
         "channel_id": "123",
-        "guild_id": "0",
+        # endpoint listujący filtruje po settings.discord_guild_id —
+        # użyj tej samej wartości, żeby test był niezależny od .env
+        "guild_id": settings.discord_guild_id,
         "created_by": "web",
     }
     payload.update(overrides)

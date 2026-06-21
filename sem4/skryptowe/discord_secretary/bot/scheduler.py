@@ -14,6 +14,8 @@ async def check_reminders(bot):
     """Pobiera oczekujące przypomnienia i wysyła je jako wiadomości prywatne."""
     async with AsyncSessionLocal() as db:
         pending = await reminder_service.get_pending_reminders(db)
+        if pending:
+            logger.info("check_reminders: %d przypomnień do wysłania", len(pending))
 
         for reminder in pending:
             try:
@@ -33,6 +35,7 @@ async def check_reminders(bot):
                             await member.send(reminder.message)
 
                 await reminder_service.mark_sent(db, reminder.id)
+                logger.info("Wysłano przypomnienie #%s", reminder.id)
             except Exception:  # noqa: BLE001 — nie przerywaj pętli z powodu jednego DM
                 logger.exception("Nie udało się wysłać przypomnienia %s", reminder.id)
 
