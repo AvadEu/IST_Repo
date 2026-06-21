@@ -1,0 +1,11 @@
+# Środowiska wirtualne
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Konfiguracja lokalna
+.env
+
+# Pliki uploadów (lokalny dev)
+uploads/
