@@ -38,7 +38,7 @@ class RecordingCog(commands.Cog):
         self.sessions: dict[int, RecordingSession] = {}  # guild_id → sesja
 
     @app_commands.command(
-        name="record", description="Nagrywanie kanału głosowego: start lub stop"
+        name="record", description="Nagrywanie kanału Stage: start lub stop"
     )
     @app_commands.describe(action="start lub stop")
     async def record(self, interaction: discord.Interaction, action: str):
@@ -69,7 +69,20 @@ class RecordingCog(commands.Cog):
         voice_state = getattr(interaction.user, "voice", None)
         if voice_state is None or voice_state.channel is None:
             await interaction.response.send_message(
-                "Musisz być na kanale głosowym.", ephemeral=True
+                "Musisz być na kanale Stage.", ephemeral=True
+            )
+            return
+
+        channel = voice_state.channel
+        # Discord wymusza E2EE (DAVE) na zwykłych kanałach głosowych, a żadna
+        # biblioteka nie deszyfruje jeszcze odbieranego audio. Kanały Stage są
+        # zwolnione z E2EE (broadcast), więc nagrywać można tylko je.
+        if not isinstance(channel, discord.StageChannel):
+            await interaction.response.send_message(
+                "Nagrywanie działa tylko na kanałach **Stage**. Zwykłe kanały "
+                "głosowe są szyfrowane end-to-end (DAVE) i nie da się ich "
+                "nagrać. Przenieś spotkanie na kanał Stage i spróbuj ponownie.",
+                ephemeral=True,
             )
             return
 
@@ -82,7 +95,6 @@ class RecordingCog(commands.Cog):
         # łączenie z głosem może trwać dłużej niż 3 s (limit odpowiedzi
         # na interakcję) — najpierw defer, potem followup
         await interaction.response.defer()
-        channel = voice_state.channel
 
         try:
             # reconnect=False: nie wpadaj w pętlę ponawiania przy odrzuceniu
@@ -118,7 +130,9 @@ class RecordingCog(commands.Cog):
             recorded_by=str(interaction.user.id),
             text_channel=interaction.channel,
         )
-        await interaction.followup.send("🔴 Nagrywanie rozpoczęte.")
+        await interaction.followup.send(
+            f"🔴 Nagrywanie kanału Stage „{channel.name}” rozpoczęte."
+        )
 
     async def _stop(self, interaction: discord.Interaction):
         session = self.sessions.pop(interaction.guild_id, None)

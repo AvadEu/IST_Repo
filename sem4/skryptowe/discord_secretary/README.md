@@ -28,10 +28,16 @@ Panel webowy: http://localhost:8000
 | `/meeting cancel`| Anuluj spotkanie po ID                        |
 | `/remind set`    | Ustaw przypomnienie (dla usera lub roli)      |
 | `/remind list`   | Lista przypomnień dla spotkania               |
-| `/record start`  | Rozpocznij nagrywanie kanału głosowego        |
+| `/record start`  | Rozpocznij nagrywanie kanału **Stage**         |
 | `/record stop`   | Zatrzymaj i zapisz nagranie                   |
 
 Format daty w komendach: `2025-06-15 14:00`.
+
+> **Nagrywanie tylko na kanałach Stage.** Discord wymusza szyfrowanie
+> end-to-end (DAVE) na zwykłych kanałach głosowych od marca 2026 i odbieranego
+> audio nie da się odszyfrować w żadnej obecnej bibliotece. Kanały Stage są
+> zwolnione z E2EE (broadcast), więc bot nagrywa wyłącznie je. Na zwykłym
+> kanale `/record start` zwróci stosowny komunikat.
 
 ## Struktura projektu
 
