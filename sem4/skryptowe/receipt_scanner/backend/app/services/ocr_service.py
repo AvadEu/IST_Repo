@@ -36,7 +36,9 @@ def extract_text(image_path: str) -> str:
     """Wykonaj OCR na przetworzonym obrazie i zwróć oczyszczony tekst."""
     image = preprocess_image(image_path)
     try:
-        text = pytesseract.image_to_string(image, lang="pol+eng")
+        # PSM 4 = pojedyncza kolumna tekstu o zmiennej wielkości — najlepiej
+        # zachowuje układ wierszy paragonu (nazwa … ilość … cena w jednej linii).
+        text = pytesseract.image_to_string(image, lang="pol+eng", config="--psm 4")
     except pytesseract.TesseractNotFoundError as exc:
         raise RuntimeError(
             "Tesseract OCR nie jest zainstalowany lub niedostępny w PATH."

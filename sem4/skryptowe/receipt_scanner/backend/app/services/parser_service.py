@@ -12,10 +12,26 @@ _DATE_PATTERNS = [
 
 # Słowa kluczowe oznaczające kwotę końcową
 _TOTAL_KEYWORDS = ["DO ZAPŁATY", "SUMA", "RAZEM", "TOTAL", "DO ZAPLATY"]
-_AMOUNT_RE = r"(\d+[.,]\d{2})"
+_AMOUNT_RE = r"-?\d+[.,]\d{2}"
 
-# Linia pozycji: nazwa + kwota na końcu linii
+# Linie, które nie są pozycjami (podsumowania, nagłówki, stopka paragonu)
+_NON_ITEM_KEYWORDS = [
+    "SUMA", "RAZEM", "DO ZAPŁATY", "DO ZAPLATY", "TOTAL", "PTU",
+    "SPRZEDAŻ", "SPRZEDAZ", "RABAT", "KARTA", "GOTÓWKA", "GOTOWKA",
+    "RESZTA", "NUMER", "KASA", "NIP", "NIEFISKALNY", "FISKALNY",
+    "NAZWA", "PARAGON",
+]
+
+# Strukturalny wzorzec pozycji: "... ilość[,.]xxx x cena wartość" (wartość na końcu)
+_QTY_PRICE_RE = re.compile(
+    r"\d+[.,]\d{3}\s*[xX*]\s*\d+[.,]\d{2}\s+(?P<amount>-?\d+[.,]\d{2})\s*$"
+)
+
+# Uproszczony wzorzec pozycji: nazwa + kwota na końcu linii (paragony bez kolumn)
 _ITEM_RE = re.compile(r"^(?P<name>.+?)\s+(?P<amount>\d+[.,]\d{2})\s*[A-Za-z]?$")
+
+# Końcowy symbol PTU / kaucji do odcięcia z nazwy (np. "A", "C", "Cc", "brak", "|")
+_TRAILING_TAG_RE = re.compile(r"\s+([A-Za-z]{1,2}|brak|\|)$", re.IGNORECASE)
 
 MAX_STORE_NAME_LEN = 60
 
@@ -44,35 +60,66 @@ def extract_date(text: str) -> date | None:
 
 
 def extract_store_name(text: str) -> str | None:
-    """Pierwsza niepusta linia tekstu, przycięta do MAX_STORE_NAME_LEN znaków."""
+    """Pierwsza sensowna linia (min. 3 litery), po usunięciu śmieci OCR z brzegów."""
     for line in text.splitlines():
         stripped = line.strip()
-        if stripped:
-            return stripped[:MAX_STORE_NAME_LEN]
+        if sum(ch.isalpha() for ch in stripped) < 3:
+            continue
+        # usuń wiodące/końcowe znaki niealfanumeryczne (artefakty logo OCR)
+        cleaned = re.sub(r"^[^0-9A-Za-zĄĆĘŁŃÓŚŹŻąćęłńóśźż]+", "", stripped)
+        cleaned = cleaned.strip()
+        if cleaned:
+            return cleaned[:MAX_STORE_NAME_LEN]
     return None
 
 
 def extract_total(text: str) -> Decimal | None:
-    """Szuka kwoty przy słowach kluczowych (SUMA/RAZEM/DO ZAPŁATY/TOTAL)."""
+    """Kwota końcowa: linie ze słowem kluczowym (z pominięciem PTU), bierzemy max."""
+    candidates: list[Decimal] = []
     for line in text.splitlines():
         upper = line.upper()
+        if "PTU" in upper:  # "Suma PTU" to nie jest kwota końcowa
+            continue
         if any(keyword in upper for keyword in _TOTAL_KEYWORDS):
-            amounts = re.findall(_AMOUNT_RE, line)
-            if amounts:
-                return _to_decimal(amounts[-1])
-    return None
+            for raw in re.findall(_AMOUNT_RE, line):
+                value = _to_decimal(raw)
+                if value is not None:
+                    candidates.append(value)
+    return max(candidates) if candidates else None
+
+
+def _is_non_item(upper_line: str) -> bool:
+    return any(keyword in upper_line for keyword in _NON_ITEM_KEYWORDS)
 
 
 def extract_items(text: str) -> list[dict]:
-    """Lista pozycji {name, amount} z linii pasujących do wzorca nazwa + kwota."""
-    items: list[dict] = []
+    """Lista pozycji {name, amount}.
+
+    Najpierw próbuje wykryć strukturę kolumnową (ilość x cena wartość). Jeśli
+    paragon jej nie ma, stosuje uproszczony wzorzec "nazwa + kwota".
+    """
+    structured: list[dict] = []
     for line in text.splitlines():
         stripped = line.strip()
         if not stripped:
             continue
-        upper = stripped.upper()
-        # pomiń linie podsumowania
-        if any(keyword in upper for keyword in _TOTAL_KEYWORDS):
+        match = _QTY_PRICE_RE.search(stripped)
+        if not match:
+            continue
+        amount = _to_decimal(match.group("amount"))
+        name = stripped[: match.start()].strip()
+        name = _TRAILING_TAG_RE.sub("", name).strip()
+        if name and amount is not None:
+            structured.append({"name": name, "amount": amount})
+
+    if structured:
+        return structured
+
+    # Fallback dla paragonów bez kolumn (np. proste formaty)
+    items: list[dict] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or _is_non_item(stripped.upper()):
             continue
         match = _ITEM_RE.match(stripped)
         if match:
