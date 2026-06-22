@@ -8,7 +8,6 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config import settings
 from db.session import get_db
 from models.models import Meeting, Reminder
 from services import meeting_service, recording_service
@@ -21,9 +20,9 @@ router = APIRouter()
 
 @router.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
-    upcoming = await meeting_service.get_meetings(
-        db, settings.discord_guild_id, upcoming_only=True
-    )
+    # panel jest globalny (jak scheduler/przypomnienia) — bez filtra po guild,
+    # żeby spotkania z każdego serwera bota były widoczne
+    upcoming = await meeting_service.get_meetings(db, upcoming_only=True)
     recordings = await recording_service.get_recordings(db)
 
     today = datetime.now().date()
@@ -48,7 +47,7 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
 
 @router.get("/meetings", response_class=HTMLResponse)
 async def meetings_page(request: Request, db: AsyncSession = Depends(get_db)):
-    meetings = await meeting_service.get_meetings(db, settings.discord_guild_id)
+    meetings = await meeting_service.get_meetings(db)
     return templates.TemplateResponse(
         request, "meetings.html", {"meetings": meetings}
     )

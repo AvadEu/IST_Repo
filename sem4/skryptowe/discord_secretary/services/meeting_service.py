@@ -53,9 +53,11 @@ async def create_meeting(db: AsyncSession, data: MeetingCreate) -> Meeting:
 
 
 async def get_meetings(
-    db: AsyncSession, guild_id: str, upcoming_only: bool = False
+    db: AsyncSession, guild_id: str | None = None, upcoming_only: bool = False
 ) -> list[Meeting]:
-    stmt = select(Meeting).where(Meeting.guild_id == guild_id)
+    stmt = select(Meeting)
+    if guild_id is not None:
+        stmt = stmt.where(Meeting.guild_id == guild_id)
     if upcoming_only:
         stmt = stmt.where(Meeting.start_time >= datetime.now())
     stmt = stmt.order_by(Meeting.start_time)

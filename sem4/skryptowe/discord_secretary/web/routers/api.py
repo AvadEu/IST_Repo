@@ -2,7 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config import settings
 from db.session import get_db
 from models.models import Reminder
 from schemas.schemas import (
@@ -18,7 +17,7 @@ router = APIRouter()
 
 @router.get("/meetings", response_model=list[MeetingRead])
 async def list_meetings(db: AsyncSession = Depends(get_db)):
-    return await meeting_service.get_meetings(db, settings.discord_guild_id)
+    return await meeting_service.get_meetings(db)
 
 
 @router.post("/meetings", response_model=MeetingRead, status_code=201)
