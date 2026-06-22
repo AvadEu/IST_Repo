@@ -27,6 +27,23 @@ async def test_create_reminder(db, sample_meeting_data):
 
 
 @pytest.mark.asyncio
+async def test_create_role_reminder(db, sample_meeting_data):
+    meeting = await _make_meeting(db, sample_meeting_data)
+    remind_at = meeting.start_time - timedelta(minutes=10)
+
+    reminder = await reminder_service.create_reminder(
+        db, meeting.id, "role", "444555666", remind_at, "Przypomnienie dla roli"
+    )
+
+    assert reminder.target_type == "role"
+    assert reminder.target_id == "444555666"
+
+    for_meeting = await reminder_service.get_reminders_for_meeting(db, meeting.id)
+    assert any(r.target_type == "role" and r.target_id == "444555666"
+               for r in for_meeting)
+
+
+@pytest.mark.asyncio
 async def test_remind_at_after_start_raises(db, sample_meeting_data):
     meeting = await _make_meeting(db, sample_meeting_data)
     too_late = meeting.start_time + timedelta(minutes=5)

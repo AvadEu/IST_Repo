@@ -23,7 +23,7 @@ Panel webowy: http://localhost:8000
 
 | Komenda          | Opis                                          |
 |------------------|-----------------------------------------------|
-| `/meeting create`| Zaplanuj spotkanie (tytuł, początek, koniec)  |
+| `/meeting create`| Zaplanuj spotkanie; opcjonalnie `role` + `minutes_before` (DM dla roli) |
 | `/meeting list`  | Lista nadchodzących spotkań                   |
 | `/meeting cancel`| Anuluj spotkanie po ID                        |
 | `/remind set`    | Ustaw przypomnienie (dla usera lub roli)      |

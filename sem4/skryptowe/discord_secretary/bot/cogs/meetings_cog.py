@@ -31,6 +31,8 @@ class MeetingsCog(commands.Cog):
         end="Koniec, format: 2025-06-15 15:00",
         channel="Kanał głosowy (opcjonalnie)",
         description="Opis (opcjonalnie)",
+        role="Rola, której członkowie dostaną przypomnienie DM (opcjonalnie)",
+        minutes_before="Ile minut przed startem wysłać przypomnienie (domyślnie 10)",
     )
     async def create(
         self,
@@ -40,6 +42,8 @@ class MeetingsCog(commands.Cog):
         end: str,
         channel: discord.VoiceChannel | None = None,
         description: str | None = None,
+        role: discord.Role | None = None,
+        minutes_before: int = AUTO_REMINDER_MINUTES,
     ):
         try:
             start_dt = _parse_dt(start)
@@ -53,6 +57,13 @@ class MeetingsCog(commands.Cog):
         if end_dt <= start_dt:
             await interaction.response.send_message(
                 "Koniec spotkania musi być późniejszy niż początek.", ephemeral=True
+            )
+            return
+
+        if minutes_before < 1:
+            await interaction.response.send_message(
+                "Wyprzedzenie przypomnienia musi wynosić co najmniej 1 minutę.",
+                ephemeral=True,
             )
             return
 
@@ -70,18 +81,21 @@ class MeetingsCog(commands.Cog):
             async with AsyncSessionLocal() as db:
                 meeting = await meeting_service.create_meeting(db, data)
 
-                # auto-przypomnienie DM dla twórcy, AUTO_REMINDER_MINUTES przed startem
-                remind_at = meeting.start_time - timedelta(minutes=AUTO_REMINDER_MINUTES)
-                reminder_added = remind_at < meeting.start_time
-                if reminder_added:
+                remind_at = meeting.start_time - timedelta(minutes=minutes_before)
+                message = (
+                    f"Przypomnienie: spotkanie „{meeting.title}” zaczyna się "
+                    f"o {meeting.start_time.strftime(DATETIME_FORMAT)}."
+                )
+
+                # auto-przypomnienie DM dla twórcy
+                await reminder_service.create_reminder(
+                    db, meeting.id, "user", str(interaction.user.id), remind_at, message
+                )
+
+                # przypomnienie DM dla wszystkich członków podanej roli
+                if role is not None:
                     await reminder_service.create_reminder(
-                        db,
-                        meeting.id,
-                        "user",
-                        str(interaction.user.id),
-                        remind_at,
-                        f"Przypomnienie: spotkanie „{meeting.title}” zaczyna się "
-                        f"o {meeting.start_time.strftime(DATETIME_FORMAT)}.",
+                        db, meeting.id, "role", str(role.id), remind_at, message
                     )
         except (ValidationError, ValueError) as exc:
             await interaction.response.send_message(f"Błąd: {exc}", ephemeral=True)
@@ -99,11 +113,16 @@ class MeetingsCog(commands.Cog):
         embed.add_field(
             name="Koniec", value=meeting.end_time.strftime(DATETIME_FORMAT)
         )
-        if reminder_added:
+        embed.add_field(
+            name="Przypomnienie",
+            value=f"DM {minutes_before} min przed startem "
+            f"({remind_at.strftime(DATETIME_FORMAT)})",
+            inline=False,
+        )
+        if role is not None:
             embed.add_field(
-                name="Przypomnienie",
-                value=f"DM {AUTO_REMINDER_MINUTES} min przed startem "
-                f"({remind_at.strftime(DATETIME_FORMAT)})",
+                name="Przypomnienie dla roli",
+                value=f"DM do wszystkich z roli {role.mention}",
                 inline=False,
             )
         await interaction.response.send_message(embed=embed)
