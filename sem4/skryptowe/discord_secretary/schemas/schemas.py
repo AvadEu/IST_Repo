@@ -49,10 +49,6 @@ class ReminderCreate(BaseModel):
     message: str
 
 
-class ReminderUpdate(BaseModel):
-    remind_at: datetime
-
-
 class ReminderRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

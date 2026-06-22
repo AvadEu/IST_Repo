@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import discord
 from discord import app_commands
@@ -67,46 +67,6 @@ class RemindersCog(commands.Cog):
 
         await interaction.response.send_message(
             f"Przypomnienie #{reminder.id} ustawione na "
-            f"{remind_at.strftime(DATETIME_FORMAT)}."
-        )
-
-    @group.command(
-        name="reschedule", description="Zmień czas wysłania przypomnienia"
-    )
-    @app_commands.describe(
-        reminder_id="ID przypomnienia",
-        new_time="Nowy czas, format: 2025-06-15 14:00",
-    )
-    async def reschedule(
-        self, interaction: discord.Interaction, reminder_id: int, new_time: str
-    ):
-        try:
-            remind_at = datetime.strptime(new_time.strip(), DATETIME_FORMAT)
-        except ValueError:
-            await interaction.response.send_message(
-                "Niepoprawny format daty. Użyj: 2025-06-15 14:00", ephemeral=True
-            )
-            return
-
-        async with AsyncSessionLocal() as db:
-            try:
-                reminder = await reminder_service.update_reminder_time(
-                    db, reminder_id, remind_at
-                )
-            except ValueError as exc:
-                await interaction.response.send_message(
-                    f"Błąd: {exc}", ephemeral=True
-                )
-                return
-
-        if reminder is None:
-            await interaction.response.send_message(
-                f"Nie znaleziono przypomnienia #{reminder_id}.", ephemeral=True
-            )
-            return
-
-        await interaction.response.send_message(
-            f"Przypomnienie #{reminder_id} przełożone na "
             f"{remind_at.strftime(DATETIME_FORMAT)}."
         )
 

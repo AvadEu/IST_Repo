@@ -39,26 +39,6 @@ async def create_reminder(
     return reminder
 
 
-async def update_reminder_time(
-    db: AsyncSession, reminder_id: int, remind_at: datetime
-) -> Reminder | None:
-    reminder = await db.get(Reminder, reminder_id)
-    if reminder is None:
-        return None
-
-    meeting = await db.get(Meeting, reminder.meeting_id)
-    if meeting is not None and remind_at >= meeting.start_time:
-        raise ValueError("remind_at must be before meeting.start_time")
-
-    reminder.remind_at = remind_at
-    # po zmianie czasu przypomnienie ma zostać wysłane ponownie o nowej porze
-    reminder.sent = False
-    reminder.sent_at = None
-    await db.commit()
-    await db.refresh(reminder)
-    return reminder
-
-
 async def get_pending_reminders(db: AsyncSession) -> list[Reminder]:
     stmt = select(Reminder).where(
         Reminder.sent.is_(False),
