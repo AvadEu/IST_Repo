@@ -7,12 +7,6 @@ import datetime
 
 @runtime_checkable
 class Analyzer(Protocol):
-    """Structural type for any object able to analyze a TimeSeries.
-
-    Both the SeriesValidator subclasses and SimpleReporter satisfy it
-    purely by providing a matching ``analyze`` method (duck typing).
-    """
-
     def analyze(self, series: TimeSeries) -> list[str]:
         ...
 

@@ -8,7 +8,7 @@ from PySide6.QtCore import QAbstractListModel, QModelIndex, Qt
 
 from src.parser.models import LogEntry
 
-_SUMMARY_LENGTH = 30  # how many chars of the raw line we show in the list
+_SUMMARY_LENGTH = 150  # how many chars of the raw line we show in the list
 
 
 class LogListModel(QAbstractListModel):
@@ -18,6 +18,7 @@ class LogListModel(QAbstractListModel):
         self._visible_entries: List[LogEntry] = []  # what's left after the date filter
         self._date_from: Optional[date] = None
         self._date_to: Optional[date] = None
+        self._url_filter: Optional[str] = ""
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:  # noqa: N802
         if parent.isValid():
@@ -37,11 +38,12 @@ class LogListModel(QAbstractListModel):
         return None
 
     def set_entries(self, entries: List[LogEntry]) -> None:
-        # new file loaded -> reset everything, drop the filter
+        # new file loaded -> reset everything, drop the filters
         self.beginResetModel()
         self._all_entries = entries
         self._date_from = None
         self._date_to = None
+        self._url_filter = ""
         self._visible_entries = list(entries)
         self.endResetModel()
 
@@ -50,6 +52,14 @@ class LogListModel(QAbstractListModel):
         self.beginResetModel()
         self._date_from = date_from
         self._date_to = date_to
+        self._visible_entries = [
+            entry for entry in self._all_entries if self._matches_filter(entry)
+        ]
+        self.endResetModel()
+
+    def set_url_filter(self, url_filter: str) -> None:
+        self.beginResetModel()
+        self._url_filter = url_filter
         self._visible_entries = [
             entry for entry in self._all_entries if self._matches_filter(entry)
         ]
@@ -75,8 +85,11 @@ class LogListModel(QAbstractListModel):
         return min(dates), max(dates)
 
     def _matches_filter(self, entry: LogEntry) -> bool:
+        if self._url_filter and self._url_filter.lower() not in entry.resource.lower():
+            return False
+
         if entry.timestamp is None:
-            # no timestamp -> only show it when there's no filter at all
+            # no timestamp -> only pass the date filter when no date is set
             return self._date_from is None and self._date_to is None
 
         entry_date = entry.timestamp.date()

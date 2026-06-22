@@ -70,5 +70,15 @@ class TimeSeries:
         valid = [v for v in self.values if v is not None]
         return float(np.std(valid, ddof=0)) if len(valid) > 1 else None
 
+    @property
+    def min_value(self) -> float | None:
+        valid = [v for v in self.values if v is not None]
+        return min(valid) if len(valid) > 1 else None
+
+    @property
+    def max_value(self) -> float | None:
+        valid = [v for v in self.values if v is not None]
+        return max(valid) if len(valid) > 1 else None
+
     def _valid_pairs(self) -> list[tuple[datetime.datetime, float]]:
         return [(d, v) for d, v in zip(self.dates, self.values) if v is not None]

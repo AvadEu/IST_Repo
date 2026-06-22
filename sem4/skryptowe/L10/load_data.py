@@ -1,14 +1,3 @@
-#!/usr/bin/env python3
-"""Zadanie 2: import danych GTFS do bazy SQLite.
-
-Wywołanie:
-    python load_data.py OtwartyWroclaw_rozklad_jazdy_GTFS.zip my_timetable
-
-Źródłem danych może być paczka ZIP albo katalog z plikami ``*.txt``.
-Dane wstawiane są w kolejności zgodnej z kluczami obcymi:
-    agency -> calendar -> stops -> routes -> trips -> stop_times
-Duże pliki (stop_times) wstawiane są partiami w obrębie transakcji.
-"""
 from __future__ import annotations
 
 import argparse

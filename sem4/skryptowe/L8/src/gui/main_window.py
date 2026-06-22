@@ -80,6 +80,8 @@ class MainWindow(QWidget):
         filter_layout = QHBoxLayout()
         self._date_from = QDateEdit()
         self._date_to = QDateEdit()
+        self.url_filter = QLineEdit()
+        self.url_filter.setEnabled(True)
         for editor in (self._date_from, self._date_to):
             editor.setCalendarPopup(True)
             editor.setDisplayFormat("yyyy-MM-dd")
@@ -90,6 +92,7 @@ class MainWindow(QWidget):
         filter_layout.addWidget(QLabel("To"))
         filter_layout.addWidget(self._date_to)
         filter_layout.addStretch(1)
+        filter_layout.addWidget(self.url_filter)
         layout.addLayout(filter_layout)
 
         self._list_view = QListView()
@@ -155,6 +158,7 @@ class MainWindow(QWidget):
         self._next_button.clicked.connect(self._on_next_clicked)
         self._date_from.dateChanged.connect(self._on_filter_changed)
         self._date_to.dateChanged.connect(self._on_filter_changed)
+        self.url_filter.textChanged.connect(self._on_url_filter_changed)
 
         selection_model = self._list_view.selectionModel()
         selection_model.currentChanged.connect(self._on_selection_changed)
@@ -251,6 +255,19 @@ class MainWindow(QWidget):
         date_from = self._qdate_to_date(self._date_from.date())
         date_to = self._qdate_to_date(self._date_to.date())
         self._model.set_time_filter(date_from, date_to)
+        self._model.set_url_filter(self.url_filter.text())
+
+        self._clear_detail()
+        if self._model.rowCount() > 0:
+            self._select_row(0)
+        self._update_navigation_state()
+
+    def _on_url_filter_changed(self, text: str) -> None:
+        # refresh the list every time the resource text filter changes
+        if self._model.is_empty():
+            return
+
+        self._model.set_url_filter(text)
 
         self._clear_detail()
         if self._model.rowCount() > 0:

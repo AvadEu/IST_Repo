@@ -35,7 +35,7 @@ class LogEntry:
             return ""
         return "UTC" if self.timestamp.tzinfo == timezone.utc else str(self.timestamp.tzinfo)
 
-    def summary(self, max_length: int = 30) -> str:
+    def summary(self, max_length: int = 100) -> str:
         # short version for the master list: cut to 30 chars + "..."
         text = self.raw.strip()
         if len(text) <= max_length:

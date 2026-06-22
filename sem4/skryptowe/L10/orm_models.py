@@ -1,9 +1,3 @@
-"""Wersja dla ambitnych: definicja modeli ORM (SQLAlchemy 2.0).
-
-Modele odpowiadają tabelom bazy danych GTFS i odwzorowują relacje
-między nimi (klucze obce + relationship). Ta sama struktura, co w
-``schema.sql``, ale wyrażona w kodzie Pythona.
-"""
 from __future__ import annotations
 
 from sqlalchemy import ForeignKey, Integer, Float, Text
