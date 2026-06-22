@@ -17,7 +17,7 @@ cp .env.example .env
 make up
 ```
 
-Panel webowy: http://localhost:8000
+Panel webowy: http://0.0.0.0
 
 ## Komendy Discord
 
@@ -71,7 +71,7 @@ discord-secretary/
 | `DATABASE_URL`    | URL bazy (async SQLite)    | `sqlite+aiosqlite:////data/secretary.db` |
 | `AUDIO_DIR`       | Katalog na pliki `.ogg`    | `/data/audio`                            |
 | `WEB_HOST`        | Host serwera webowego      | `0.0.0.0`                                |
-| `WEB_PORT`        | Port serwera webowego      | `8000`                                   |
+| `WEB_PORT`        | Port serwera webowego      | `80`                                     |
 | `SECRET_KEY`      | Klucz aplikacji            | `change_me`                              |
 
 ## Jak uzyskać token

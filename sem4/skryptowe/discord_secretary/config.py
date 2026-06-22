@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+aiosqlite:////data/secretary.db"
     audio_dir: str = "/data/audio"
     web_host: str = "0.0.0.0"
-    web_port: int = 8000
+    web_port: int = 80
     secret_key: str = "change_me"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")

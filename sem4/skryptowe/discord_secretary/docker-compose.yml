@@ -7,7 +7,7 @@ services:
       # w komendach (porównanie remind_at <= datetime.now() w schedulerze)
       TZ: ${TZ:-Europe/Warsaw}
     ports:
-      - "8000:8000"
+      - "80:80"
     volumes:
       - db_data:/data
       - audio_data:/data/audio
