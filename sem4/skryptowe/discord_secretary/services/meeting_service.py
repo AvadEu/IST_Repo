@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,16 +7,22 @@ from sqlalchemy.orm import selectinload
 from models.models import Meeting, MeetingParticipant
 from schemas.schemas import MeetingCreate
 
+# domyślny czas trwania, gdy nie podano końca spotkania
+DEFAULT_MEETING_MINUTES = 60
+
 
 async def create_meeting(db: AsyncSession, data: MeetingCreate) -> Meeting:
-    if data.start_time >= data.end_time:
+    end_time = data.end_time or data.start_time + timedelta(
+        minutes=DEFAULT_MEETING_MINUTES
+    )
+    if data.start_time >= end_time:
         raise ValueError("start_time must be before end_time")
 
     # collision check: overlapping meeting in the same channel
     overlap_stmt = select(Meeting).where(
         and_(
             Meeting.channel_id == data.channel_id,
-            Meeting.start_time < data.end_time,
+            Meeting.start_time < end_time,
             Meeting.end_time > data.start_time,
         )
     )
@@ -30,7 +36,7 @@ async def create_meeting(db: AsyncSession, data: MeetingCreate) -> Meeting:
         title=data.title,
         description=data.description,
         start_time=data.start_time,
-        end_time=data.end_time,
+        end_time=end_time,
         channel_id=data.channel_id,
         guild_id=data.guild_id,
         created_by=data.created_by,

@@ -28,7 +28,7 @@ class MeetingsCog(commands.Cog):
     @app_commands.describe(
         title="Tytuł spotkania",
         start="Początek, format: 2025-06-15 14:00",
-        end="Koniec, format: 2025-06-15 15:00",
+        end="Koniec (opcjonalnie, domyślnie 60 min od startu)",
         channel="Kanał głosowy (opcjonalnie)",
         description="Opis (opcjonalnie)",
         role="Rola, której członkowie dostaną przypomnienie DM (opcjonalnie)",
@@ -39,7 +39,7 @@ class MeetingsCog(commands.Cog):
         interaction: discord.Interaction,
         title: str,
         start: str,
-        end: str,
+        end: str | None = None,
         channel: discord.VoiceChannel | None = None,
         description: str | None = None,
         role: discord.Role | None = None,
@@ -47,14 +47,14 @@ class MeetingsCog(commands.Cog):
     ):
         try:
             start_dt = _parse_dt(start)
-            end_dt = _parse_dt(end)
+            end_dt = _parse_dt(end) if end else None
         except ValueError:
             await interaction.response.send_message(
                 "Niepoprawny format daty. Użyj: 2025-06-15 14:00", ephemeral=True
             )
             return
 
-        if end_dt <= start_dt:
+        if end_dt is not None and end_dt <= start_dt:
             await interaction.response.send_message(
                 "Koniec spotkania musi być późniejszy niż początek.", ephemeral=True
             )

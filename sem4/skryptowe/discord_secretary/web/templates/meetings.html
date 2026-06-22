@@ -56,8 +56,8 @@
             <input type="datetime-local" class="form-control" name="start_time" required>
           </div>
           <div class="mb-3">
-            <label class="form-label">Koniec</label>
-            <input type="datetime-local" class="form-control" name="end_time" required>
+            <label class="form-label">Koniec <small class="text-muted">(opcjonalnie, domyślnie 60 min)</small></label>
+            <input type="datetime-local" class="form-control" name="end_time">
           </div>
           <div class="mb-3">
             <label class="form-label">ID kanału</label>
@@ -94,7 +94,7 @@ document.getElementById("meetingForm").addEventListener("submit", async (e) => {
     title: form.title.value,
     description: form.description.value || null,
     start_time: form.start_time.value,
-    end_time: form.end_time.value,
+    end_time: form.end_time.value || null,
     channel_id: form.channel_id.value,
     guild_id: form.guild_id.value,
     created_by: "web",

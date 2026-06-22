@@ -12,7 +12,8 @@ class MeetingCreate(BaseModel):
     title: str
     description: str | None = None
     start_time: datetime
-    end_time: datetime
+    # opcjonalny — gdy pominięty, serwis domyśla 60 min od startu
+    end_time: datetime | None = None
     channel_id: str
     guild_id: str
     created_by: str
@@ -20,7 +21,9 @@ class MeetingCreate(BaseModel):
 
     @field_validator("end_time")
     @classmethod
-    def end_after_start(cls, v: datetime, info) -> datetime:
+    def end_after_start(cls, v: datetime | None, info) -> datetime | None:
+        if v is None:
+            return v
         start = info.data.get("start_time")
         if start is not None and v <= start:
             raise ValueError("end_time must be after start_time")

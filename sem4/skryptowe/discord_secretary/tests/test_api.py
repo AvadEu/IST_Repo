@@ -78,6 +78,16 @@ async def test_post_meeting_creates(client):
 
 
 @pytest.mark.asyncio
+async def test_post_meeting_without_end_defaults(client):
+    payload = _meeting_payload()
+    del payload["end_time"]
+    res = await client.post("/api/meetings", json=payload)
+    assert res.status_code == 201
+    # start 14:00 -> domyślny koniec 15:00 (60 min)
+    assert res.json()["end_time"].startswith("2030-06-15T15:00")
+
+
+@pytest.mark.asyncio
 async def test_post_meeting_invalid_times(client):
     bad = _meeting_payload(end_time="2030-06-15T13:00:00")
     res = await client.post("/api/meetings", json=bad)

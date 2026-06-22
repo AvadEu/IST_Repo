@@ -31,7 +31,8 @@ Panel webowy: http://localhost:8000
 | `/record start`  | Rozpocznij nagrywanie kanału **Stage**         |
 | `/record stop`   | Zatrzymaj i zapisz nagranie                   |
 
-Format daty w komendach: `2025-06-15 14:00`.
+Format daty w komendach: `2025-06-15 14:00`. Koniec spotkania jest opcjonalny
+— gdy pominięty, przyjmowane jest 60 minut od startu.
 
 > **Nagrywanie tylko na kanałach Stage.** Discord wymusza szyfrowanie
 > end-to-end (DAVE) na zwykłych kanałach głosowych od marca 2026 i odbieranego

@@ -17,6 +17,17 @@ async def test_create_meeting(db, sample_meeting_data):
 
 
 @pytest.mark.asyncio
+async def test_create_meeting_default_end(db, sample_meeting_data):
+    data = sample_meeting_data.copy()
+    data.pop("end_time")
+    data["participants"] = []
+
+    meeting = await meeting_service.create_meeting(db, MeetingCreate(**data))
+
+    assert meeting.end_time == meeting.start_time + timedelta(minutes=60)
+
+
+@pytest.mark.asyncio
 async def test_collision_detection(db, sample_meeting_data):
     data = MeetingCreate(**sample_meeting_data)
     await meeting_service.create_meeting(db, data)
