@@ -27,6 +27,7 @@ Panel webowy: http://localhost:8000
 | `/meeting list`  | Lista nadchodzących spotkań                   |
 | `/meeting cancel`| Anuluj spotkanie po ID                        |
 | `/remind set`    | Ustaw przypomnienie (dla usera lub roli)      |
+| `/remind reschedule` | Zmień czas wysłania przypomnienia (też w panelu web) |
 | `/remind list`   | Lista przypomnień dla spotkania               |
 | `/record start`  | Rozpocznij nagrywanie kanału **Stage**         |
 | `/record stop`   | Zatrzymaj i zapisz nagranie                   |

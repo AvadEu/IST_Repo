@@ -33,12 +33,15 @@ async def client():
             yield session
 
     app.dependency_overrides[get_db] = override_get_db
+    # udostępnij fabrykę sesji testom, które muszą zasiać dane bez endpointu
+    app.state.test_session_factory = session_factory
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
     app.dependency_overrides.clear()
+    app.state.test_session_factory = None
     await engine.dispose()
 
 
@@ -102,3 +105,37 @@ async def test_get_recordings_empty(client):
     res = await client.get("/api/recordings")
     assert res.status_code == 200
     assert res.json() == []
+
+
+async def _seed_reminder(meeting_id):
+    from datetime import datetime
+
+    from services import reminder_service
+
+    async with app.state.test_session_factory() as db:
+        return await reminder_service.create_reminder(
+            db, meeting_id, "user", "1", datetime(2030, 6, 15, 13, 50), "x"
+        )
+
+
+@pytest.mark.asyncio
+async def test_patch_reminder_updates_time(client):
+    created = await client.post("/api/meetings", json=_meeting_payload())
+    reminder = await _seed_reminder(created.json()["id"])
+
+    res = await client.patch(
+        f"/api/reminders/{reminder.id}",
+        json={"remind_at": "2030-06-15T13:30:00"},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["remind_at"].startswith("2030-06-15T13:30")
+    assert body["sent"] is False
+
+
+@pytest.mark.asyncio
+async def test_patch_reminder_not_found(client):
+    res = await client.patch(
+        "/api/reminders/99999", json={"remind_at": "2030-06-15T13:30:00"}
+    )
+    assert res.status_code == 404

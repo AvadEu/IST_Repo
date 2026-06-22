@@ -10,8 +10,9 @@ from schemas.schemas import (
     MeetingRead,
     RecordingRead,
     ReminderRead,
+    ReminderUpdate,
 )
-from services import meeting_service, recording_service
+from services import meeting_service, recording_service, reminder_service
 
 router = APIRouter()
 
@@ -41,6 +42,21 @@ async def cancel_meeting(meeting_id: int, db: AsyncSession = Depends(get_db)):
 async def list_reminders(db: AsyncSession = Depends(get_db)):
     stmt = select(Reminder).order_by(Reminder.meeting_id, Reminder.remind_at)
     return list((await db.execute(stmt)).scalars().all())
+
+
+@router.patch("/reminders/{reminder_id}", response_model=ReminderRead)
+async def update_reminder(
+    reminder_id: int, data: ReminderUpdate, db: AsyncSession = Depends(get_db)
+):
+    try:
+        reminder = await reminder_service.update_reminder_time(
+            db, reminder_id, data.remind_at
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    if reminder is None:
+        raise HTTPException(status_code=404, detail="reminder not found")
+    return reminder
 
 
 @router.get("/recordings", response_model=list[RecordingRead])

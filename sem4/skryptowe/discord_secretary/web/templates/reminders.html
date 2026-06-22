@@ -5,9 +5,12 @@
 
 {% for meeting_id, items in grouped.items() %}
   <h4 class="mt-4">Spotkanie #{{ meeting_id }}</h4>
-  <table class="table table-sm table-striped">
+  <table class="table table-sm table-striped align-middle">
     <thead>
-      <tr><th>ID</th><th>Cel</th><th>Kiedy</th><th>Treść</th><th>Status</th></tr>
+      <tr>
+        <th>ID</th><th>Cel</th><th>Kiedy</th><th>Treść</th>
+        <th>Status</th><th>Zmień czas</th>
+      </tr>
     </thead>
     <tbody>
     {% for r in items %}
@@ -23,6 +26,15 @@
             <span class="badge text-bg-warning">oczekuje</span>
           {% endif %}
         </td>
+        <td>
+          <div class="input-group input-group-sm" style="min-width: 280px;">
+            <input type="datetime-local" class="form-control"
+                   id="time-{{ r.id }}"
+                   value="{{ r.remind_at.strftime('%Y-%m-%dT%H:%M') }}">
+            <button class="btn btn-outline-primary"
+                    onclick="updateReminder({{ r.id }})">Zapisz</button>
+          </div>
+        </td>
       </tr>
     {% endfor %}
     </tbody>
@@ -30,4 +42,27 @@
 {% else %}
   <p class="text-muted">Brak przypomnień.</p>
 {% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function updateReminder(id) {
+  const input = document.getElementById("time-" + id);
+  if (!input.value) {
+    alert("Podaj datę i godzinę.");
+    return;
+  }
+  const res = await fetch("/api/reminders/" + id, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ remind_at: input.value }),
+  });
+  if (res.ok) {
+    location.reload();
+  } else {
+    const err = await res.json().catch(() => ({}));
+    alert("Błąd: " + (err.detail || res.status));
+  }
+}
+</script>
 {% endblock %}

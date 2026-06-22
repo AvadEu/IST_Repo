@@ -44,6 +44,44 @@ async def test_create_role_reminder(db, sample_meeting_data):
 
 
 @pytest.mark.asyncio
+async def test_update_reminder_time(db, sample_meeting_data):
+    meeting = await _make_meeting(db, sample_meeting_data)
+    reminder = await reminder_service.create_reminder(
+        db, meeting.id, "user", "1", datetime(2000, 1, 1, 12, 0), "due"
+    )
+    # oznacz jako wysłane, by sprawdzić reset
+    await reminder_service.mark_sent(db, reminder.id)
+
+    new_time = meeting.start_time - timedelta(minutes=30)
+    updated = await reminder_service.update_reminder_time(db, reminder.id, new_time)
+
+    assert updated is not None
+    assert updated.remind_at == new_time
+    assert updated.sent is False
+    assert updated.sent_at is None
+
+
+@pytest.mark.asyncio
+async def test_update_reminder_time_not_found(db):
+    result = await reminder_service.update_reminder_time(
+        db, 99999, datetime(2030, 1, 1, 12, 0)
+    )
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_update_reminder_time_after_start_raises(db, sample_meeting_data):
+    meeting = await _make_meeting(db, sample_meeting_data)
+    reminder = await reminder_service.create_reminder(
+        db, meeting.id, "user", "1", meeting.start_time - timedelta(minutes=5), "x"
+    )
+    with pytest.raises(ValueError, match="before meeting.start_time"):
+        await reminder_service.update_reminder_time(
+            db, reminder.id, meeting.start_time + timedelta(minutes=5)
+        )
+
+
+@pytest.mark.asyncio
 async def test_remind_at_after_start_raises(db, sample_meeting_data):
     meeting = await _make_meeting(db, sample_meeting_data)
     too_late = meeting.start_time + timedelta(minutes=5)
