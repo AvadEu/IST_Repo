@@ -8,8 +8,8 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from db.session import Base
 import models.models  # noqa: F401  (register tables)
+from db.session import Base
 
 
 @pytest_asyncio.fixture

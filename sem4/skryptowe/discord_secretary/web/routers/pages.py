@@ -20,9 +20,6 @@ router = APIRouter()
 
 @router.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
-    # panel jest globalny (jak scheduler/przypomnienia) — bez filtra po guild,
-    # żeby spotkania z każdego serwera bota były widoczne
-    upcoming = await meeting_service.get_meetings(db, upcoming_only=True)
     recordings = await recording_service.get_recordings(db)
 
     today = datetime.now().date()
@@ -37,7 +34,6 @@ async def dashboard(request: Request, db: AsyncSession = Depends(get_db)):
         request,
         "dashboard.html",
         {
-            "upcoming": upcoming,
             "recordings": recordings,
             "recordings_count": len(recordings),
             "meetings_today": meetings_today,

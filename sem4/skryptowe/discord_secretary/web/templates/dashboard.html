@@ -13,14 +13,6 @@
     </div>
   </div>
   <div class="col-md-4">
-    <div class="card text-bg-success">
-      <div class="card-body">
-        <h5 class="card-title">Nadchodzące spotkania</h5>
-        <p class="display-6 mb-0">{{ upcoming|length }}</p>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-4">
     <div class="card text-bg-secondary">
       <div class="card-body">
         <h5 class="card-title">Wszystkie nagrania</h5>
@@ -30,24 +22,7 @@
   </div>
 </div>
 
-<h3>Najbliższe spotkania</h3>
-<table class="table table-striped">
-  <thead><tr><th>ID</th><th>Tytuł</th><th>Początek</th><th>Koniec</th></tr></thead>
-  <tbody>
-  {% for m in upcoming[:5] %}
-    <tr>
-      <td>{{ m.id }}</td>
-      <td>{{ m.title }}</td>
-      <td>{{ m.start_time.strftime("%Y-%m-%d %H:%M") }}</td>
-      <td>{{ m.end_time.strftime("%Y-%m-%d %H:%M") }}</td>
-    </tr>
-  {% else %}
-    <tr><td colspan="4" class="text-muted">Brak nadchodzących spotkań.</td></tr>
-  {% endfor %}
-  </tbody>
-</table>
-
-<h3 class="mt-4">Ostatnie nagrania</h3>
+<h3>Ostatnie nagrania</h3>
 <table class="table table-striped">
   <thead><tr><th>ID</th><th>Plik</th><th>Data</th></tr></thead>
   <tbody>

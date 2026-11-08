@@ -13,7 +13,7 @@ migrate:
 	docker compose exec bot alembic upgrade head
 
 test:
-	docker compose exec bot pytest
+	docker compose exec bot python -m pytest
 
 shell:
 	docker compose exec bot /bin/bash

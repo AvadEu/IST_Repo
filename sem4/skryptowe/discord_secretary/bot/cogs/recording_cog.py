@@ -60,10 +60,17 @@ class RecordingCog(commands.Cog):
         # "Ignoring exception in command 'record'"
         logger.exception("Nieobsłużony błąd w komendzie /record", exc_info=error)
         msg = "❌ Wystąpił błąd podczas obsługi nagrywania."
-        if interaction.response.is_done():
-            await interaction.followup.send(msg, ephemeral=True)
-        else:
-            await interaction.response.send_message(msg, ephemeral=True)
+        try:
+            if interaction.response.is_done():
+                await interaction.followup.send(msg, ephemeral=True)
+            else:
+                await interaction.response.send_message(msg, ephemeral=True)
+        except discord.HTTPException:
+            # interakcja już potwierdzona (40060) lub wygasła (10062) —
+            # nie ma jak odpowiedzieć, ale handler błędu nie może sam rzucać
+            logger.warning(
+                "Nie udało się dostarczyć komunikatu o błędzie /record"
+            )
 
     async def _start(self, interaction: discord.Interaction):
         voice_state = getattr(interaction.user, "voice", None)

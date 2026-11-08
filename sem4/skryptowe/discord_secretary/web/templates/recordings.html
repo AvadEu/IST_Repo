@@ -14,7 +14,6 @@
   {% for r in recordings %}
     <tr>
       <td>{{ r.id }}</td>
-      <td>{{ r.meeting_id if r.meeting_id else "—" }}</td>
       <td>{{ r.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
       <td>{{ r.duration_sec if r.duration_sec is not none else "?" }} s</td>
       <td>

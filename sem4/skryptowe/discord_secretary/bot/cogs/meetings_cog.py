@@ -11,7 +11,7 @@ from services import meeting_service, reminder_service
 
 DATETIME_FORMAT = "%Y-%m-%d %H:%M"
 # auto-przypomnienie DM dla twórcy: ile minut przed startem spotkania
-AUTO_REMINDER_MINUTES = 5
+AUTO_REMINDER_MINUTES = 10
 
 
 def _parse_dt(value: str) -> datetime:
@@ -32,7 +32,7 @@ class MeetingsCog(commands.Cog):
         channel="Kanał głosowy (opcjonalnie)",
         description="Opis (opcjonalnie)",
         role="Rola, której członkowie dostaną przypomnienie DM (opcjonalnie)",
-        minutes_before="Ile minut przed startem wysłać przypomnienie (domyślnie 5)",
+        minutes_before="Ile minut przed startem wysłać przypomnienie (domyślnie 10)",
     )
     async def create(
         self,
@@ -63,6 +63,13 @@ class MeetingsCog(commands.Cog):
         if minutes_before < 1:
             await interaction.response.send_message(
                 "Wyprzedzenie przypomnienia musi wynosić co najmniej 1 minutę.",
+                ephemeral=True,
+            )
+            return
+        
+        if start_dt < datetime.now():
+            await interaction.response.send_message(
+                "Nie mozna zaplanowac spotkania do tylu! ",
                 ephemeral=True,
             )
             return
