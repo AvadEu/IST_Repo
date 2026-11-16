@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Formularz osobowy z walidacją danych: imię, nazwisko, miesiąc urodzin, e-mail i telefon.">
+    <meta name="keywords" content="formularz osobowy, autocomplete, walidacja, pattern, datalist">
+    <title>Formularz osobowy – Kopenhaga</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header><h1>Formularz osobowy</h1></header>
+<nav>
+    <ul class="menu">
+        <li><a href="index.html">Kopenhaga</a>
+            <ul>
+                <li><a href="index.html#gora">O mieście</a>
+                    <ul>
+                        <li><a href="index.html#nyhavn">Port Nyhavn</a></li>
+                    </ul>
+                </li>
+                <li><a href="index.html#materialy">Materiały</a>
+                    <ul>
+                        <li><a href="downloads/przewodnik.txt">Przewodnik (.txt)</a></li>
+                        <li><a href="materialy/dodatkowe/lista-atrakcji.txt">Lista atrakcji (.txt)</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li><a href="atrakcje.html">Zwiedzanie</a>
+            <ul>
+                <li><a href="atrakcje.html">Atrakcje</a>
+                    <ul>
+                        <li><a href="atrakcje.html#plan">Plan zwiedzania</a></li>
+                        <li><a href="atrakcje.html#ocena">Ocena atrakcji</a></li>
+                    </ul>
+                </li>
+                <li><a href="informacje.html">Informacje praktyczne</a>
+                    <ul>
+                        <li><a href="informacje.html#klimat">Klimat</a></li>
+                        <li><a href="informacje.html#transport">Transport</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li><a href="kontakt.html">Formularze</a>
+            <ul>
+                <li><a href="kontakt.html">Kontakt</a>
+                    <ul>
+                        <li><a href="formularz-osobowy.html">Formularz osobowy</a></li>
+                        <li><a href="formularz-dodatkowy.html">Formularz dodatkowy</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+</nav>
+<main>
+<h2>Twoje dane</h2>
+<form action="https://httpbin.org/post" method="post" autocomplete="on">
+    <table>
+        <tr>
+            <td><label for="imie">Imię:</label></td>
+            <td><input type="text" id="imie" name="imie" autofocus></td>
+            <td>Np. Anna (pole nieobowiązkowe)</td>
+        </tr>
+        <tr>
+            <td><label for="nazwisko">Nazwisko:</label></td>
+            <td><input type="text" id="nazwisko" name="nazwisko" required></td>
+            <td>Np. Kowalska (pole wymagane)</td>
+        </tr>
+        <tr>
+            <td><label for="miesiac">Miesiąc urodzin:</label></td>
+            <td>
+                <input type="text" id="miesiac" name="miesiac" list="miesiace">
+                <datalist id="miesiace">
+                    <option value="styczeń">
+                    <option value="luty">
+                    <option value="marzec">
+                    <option value="kwiecień">
+                    <option value="maj">
+                    <option value="czerwiec">
+                    <option value="lipiec">
+                    <option value="sierpień">
+                    <option value="wrzesień">
+                    <option value="październik">
+                    <option value="listopad">
+                    <option value="grudzień">
+                </datalist>
+            </td>
+            <td>Wybierz z listy lub wpisz, np. maj</td>
+        </tr>
+        <tr>
+            <td><label for="email">Adres e-mail:</label></td>
+            <td><input type="email" id="email" name="email" required></td>
+            <td>Format: nazwa@domena.pl (pole wymagane)</td>
+        </tr>
+        <tr>
+            <td><label for="telefon">Telefon:</label></td>
+            <td><input type="tel" id="telefon" name="telefon"
+                       pattern="\+[0-9]{2} [0-9]{3}-[0-9]{3}-[0-9]{3}"
+                       title="Format: +XX XXX-XXX-XXX, np. +48 123-456-789"></td>
+            <td>Format: +XX XXX-XXX-XXX, np. +48 123-456-789</td>
+        </tr>
+        <tr>
+            <td><label for="kraj">Kraj:</label></td>
+            <td><input type="text" id="kraj" name="kraj" value="Polska" disabled></td>
+            <td>Pole zablokowane (disabled)</td>
+        </tr>
+    </table>
+    <p>
+        <button type="reset">Wyczyść</button>
+        <button type="submit">Wyślij</button>
+    </p>
+</form>
+</main>
+<footer><p>&copy; 2026 Projekt o Kopenhadze</p></footer>
+</body>
+</html>

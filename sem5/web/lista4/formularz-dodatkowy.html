@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Formularz osobowy z walidacją danych: imię, nazwisko, miesiąc urodzin, e-mail i telefon.">
+    <meta name="keywords" content="formularz osobowy, autocomplete, walidacja, pattern, datalist">
+    <title>Formularz dodatkowy – Kopenhaga</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header><h1>Formularz dodatkowy</h1></header>
+<nav>
+    <ul class="menu">
+        <li><a href="index.html">Kopenhaga</a>
+            <ul>
+                <li><a href="index.html#gora">O mieście</a>
+                    <ul>
+                        <li><a href="index.html#nyhavn">Port Nyhavn</a></li>
+                    </ul>
+                </li>
+                <li><a href="index.html#materialy">Materiały</a>
+                    <ul>
+                        <li><a href="downloads/przewodnik.txt">Przewodnik (.txt)</a></li>
+                        <li><a href="materialy/dodatkowe/lista-atrakcji.txt">Lista atrakcji (.txt)</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li><a href="atrakcje.html">Zwiedzanie</a>
+            <ul>
+                <li><a href="atrakcje.html">Atrakcje</a>
+                    <ul>
+                        <li><a href="atrakcje.html#plan">Plan zwiedzania</a></li>
+                        <li><a href="atrakcje.html#ocena">Ocena atrakcji</a></li>
+                    </ul>
+                </li>
+                <li><a href="informacje.html">Informacje praktyczne</a>
+                    <ul>
+                        <li><a href="informacje.html#klimat">Klimat</a></li>
+                        <li><a href="informacje.html#transport">Transport</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li><a href="kontakt.html">Formularze</a>
+            <ul>
+                <li><a href="kontakt.html">Kontakt</a>
+                    <ul>
+                        <li><a href="formularz-osobowy.html">Formularz osobowy</a></li>
+                        <li><a href="formularz-dodatkowy.html">Formularz dodatkowy</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+</nav>
+<main>
+<h2>Opowiedz nam o sobie</h2>
+<form action="https://httpbin.org/post" method="post">
+    <table>
+        <tr>
+            <td><label for="kolor">Ulubiony kolor:</label></td>
+            <td><input type="color" id="kolor" name="kolor" value="#3366cc"></td>
+            <td>Kliknij, aby wybrać kolor</td>
+        </tr>
+        <tr>
+            <td><label for="wyjazd">Planowany miesiąc wyjazdu:</label></td>
+            <td><input type="month" id="wyjazd" name="wyjazd"></td>
+            <td>Wybierz miesiąc i rok</td>
+        </tr>
+        <tr>
+            <td><label for="podroze">Jak lubisz podróżować (0–10):</label></td>
+            <td><input type="range" id="podroze" name="podroze" min="0" max="10" value="5"></td>
+            <td>Przesuń suwak</td>
+        </tr>
+        <tr>
+            <td><label for="szukaj">Czego szukasz w Kopenhadze?</label></td>
+            <td><input type="search" id="szukaj" name="szukaj" placeholder="np. Żaglówki, rowery, kawiarnie"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td><label for="www">Twoja strona WWW:</label></td>
+            <td><input type="url" id="www" name="www" placeholder="https://www.twojastrona.pl"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td><label for="potrawa">Ulubiona potrawa:</label></td>
+            <td><input type="text" id="potrawa" name="potrawa" placeholder="np. pierogi"></td>
+            <td></td>
+        </tr>
+    </table>
+    <p>
+        <button type="reset">Wyczyść</button>
+        <button type="submit">Wyślij</button>
+    </p>
+</form>
+</main>
+<footer><p>&copy; 2026 Projekt o Kopenhadze</p></footer>
+</body>
+</html>

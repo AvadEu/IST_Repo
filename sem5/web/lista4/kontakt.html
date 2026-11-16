@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Formularz kontaktowy projektu o Kopenhadze – zadaj pytanie lub zostaw opinię.">
+    <meta name="keywords" content="Kopenhaga kontakt, formularz, opinia, pytanie, turystyka Dania">
+    <title>Kontakt i formularz – Kopenhaga</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header><h1>Kontakt</h1></header>
+<nav>
+    <ul class="menu">
+        <li><a href="index.html">Kopenhaga</a>
+            <ul>
+                <li><a href="index.html#gora">O mieście</a>
+                    <ul>
+                        <li><a href="index.html#nyhavn">Port Nyhavn</a></li>
+                    </ul>
+                </li>
+                <li><a href="index.html#materialy">Materiały</a>
+                    <ul>
+                        <li><a href="downloads/przewodnik.txt">Przewodnik (.txt)</a></li>
+                        <li><a href="materialy/dodatkowe/lista-atrakcji.txt">Lista atrakcji (.txt)</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li><a href="atrakcje.html">Zwiedzanie</a>
+            <ul>
+                <li><a href="atrakcje.html">Atrakcje</a>
+                    <ul>
+                        <li><a href="atrakcje.html#plan">Plan zwiedzania</a></li>
+                        <li><a href="atrakcje.html#ocena">Ocena atrakcji</a></li>
+                    </ul>
+                </li>
+                <li><a href="informacje.html">Informacje praktyczne</a>
+                    <ul>
+                        <li><a href="informacje.html#klimat">Klimat</a></li>
+                        <li><a href="informacje.html#transport">Transport</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li><a href="kontakt.html">Formularze</a>
+            <ul>
+                <li><a href="kontakt.html">Kontakt</a>
+                    <ul>
+                        <li><a href="formularz-osobowy.html">Formularz osobowy</a></li>
+                        <li><a href="formularz-dodatkowy.html">Formularz dodatkowy</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ul>
+</nav>
+<main>
+<h2>Formularz kontaktowy</h2>
+<form action="https://httpbin.org/post" method="post">
+    <fieldset>
+        <legend>Dane osobowe</legend>
+        <p><label for="imie">Imię:</label> <input type="text" id="imie" name="imie"></p>
+        <p><label for="nazwisko">Nazwisko:</label> <input type="text" id="nazwisko" name="nazwisko"></p>
+        <p><label for="miasto">Miasto:</label> <input type="text" id="miasto" name="miasto"></p>
+    </fieldset>
+
+    <fieldset>
+        <legend>Temat</legend>
+        <p>
+            <label for="temat">Wybierz temat:</label>
+            <select id="temat" name="temat">
+                <optgroup label="Zwiedzanie">
+                    <option value="zabytki">Zabytki</option>
+                    <option value="muzea">Muzea</option>
+                </optgroup>
+                <optgroup label="Praktyczne">
+                    <option value="transport">Transport</option>
+                    <option value="noclegi">Noclegi</option>
+                </optgroup>
+            </select>
+        </p>
+    </fieldset>
+
+    <fieldset>
+        <legend>Kiedy planujesz wyjazd?</legend>
+        <p><input type="radio" id="wiosna" name="pora" value="wiosna"><label for="wiosna"> Wiosna</label></p>
+        <p><input type="radio" id="lato" name="pora" value="lato" checked><label for="lato"> Lato</label></p>
+        <p><input type="radio" id="jesien" name="pora" value="jesien"><label for="jesien"> Jesień</label></p>
+    </fieldset>
+
+    <fieldset>
+        <legend>Co Cię interesuje?</legend>
+        <p><input type="checkbox" id="rowery" name="zainteresowania" value="rowery"><label for="rowery"> Wycieczki rowerowe</label></p>
+        <p><input type="checkbox" id="jedzenie" name="zainteresowania" value="jedzenie"><label for="jedzenie"> Kuchnia duńska</label></p>
+        <p><input type="checkbox" id="historia" name="zainteresowania" value="historia"><label for="historia"> Historia</label></p>
+    </fieldset>
+
+    <p>
+        <label for="wiadomosc">Twoja wiadomość (maks. 200 znaków):</label><br>
+        <textarea id="wiadomosc" name="wiadomosc" rows="5" cols="50" maxlength="200"></textarea>
+    </p>
+
+    <p>
+        <button type="reset">Wyczyść</button>
+        <button type="submit">Wyślij</button>
+    </p>
+</form>
+</main>
+
+<footer>
+    <p>&copy; 2026 Projekt o Kopenhadze</p>
+</footer>
+
+</body></html>
