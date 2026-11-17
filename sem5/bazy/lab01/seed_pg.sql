@@ -1,0 +1,92 @@
+BEGIN;
+
+INSERT INTO Funkcje
+VALUES ('SZEFUNIO', 90, 110),
+       ('BANDZIOR', 70, 90),
+       ('LOWCZY', 60, 70),
+       ('LAPACZ', 50, 60),
+       ('KOT', 40, 50),
+       ('MILUSIA', 20, 30),
+       ('DZIELCZY', 45, 55),
+       ('HONOROWA', 6, 25);
+
+INSERT INTO Wrogowie
+VALUES ('KAZIO', 10, 'CZLOWIEK', 'FLASZKA'),
+       ('GLUPIA ZOSKA', 1, 'CZLOWIEK', 'KORALIK'),
+       ('SWAWOLNY DYZIO', 7, 'CZLOWIEK', 'GUMA DO ZUCIA'),
+       ('BUREK', 4, 'PIES', 'KOSC'),
+       ('DZIKI BILL', 10, 'PIES', NULL),
+       ('REKSIO', 2, 'PIES', 'KOSC'),
+       ('BETHOVEN', 1, 'PIES', 'PEDIGRIPALL'),
+       ('CHYTRUSEK', 5, 'LIS', 'KURCZAK'),
+       ('SMUKLA', 1, 'SOSNA', NULL),
+       ('BAZYLI', 3, 'KOGUT', 'KURA DO STADA');
+
+-- BEZ SZEFOW (CYKL)
+INSERT INTO Bandy
+VALUES (1, 'SZEFOSTWO', 'CALOSC', NULL),
+       (2, 'CZARNI RYCERZE', 'POLE', NULL),
+       (3, 'BIALI LOWCY', 'SAD', NULL),
+       (4, 'LACIACI MYSLIWI', 'GORKA', NULL),
+       (5, 'ROCKERSI', 'ZAGRODA', NULL);
+
+-- L1
+INSERT INTO Kocury
+VALUES ('MRUCZEK', 'M', 'TYGRYS', 'SZEFUNIO', NULL, '2002-01-01', 103, 33, 1);
+
+-- L2
+INSERT INTO Kocury
+VALUES ('MICKA', 'D', 'LOLA', 'MILUSIA', 'TYGRYS', '2009-10-14', 25, 47, 1),
+       ('CHYTRY', 'M', 'BOLEK', 'DZIELCZY', 'TYGRYS', '2002-05-05', 50, NULL, 1),
+       ('KOREK', 'M', 'ZOMBI', 'BANDZIOR', 'TYGRYS', '2004-03-16', 75, 13, 3),
+       ('BOLEK', 'M', 'LYSY', 'BANDZIOR', 'TYGRYS', '2006-08-15', 72, 21, 2),
+       ('RUDA', 'D', 'MALA', 'MILUSIA', 'TYGRYS', '2006-09-17', 22, 42, 1),
+       ('PUCEK', 'M', 'RAFA', 'LOWCZY', 'TYGRYS', '2006-10-15', 65, NULL, 4);
+
+-- L3
+INSERT INTO Kocury
+VALUES ('JACEK', 'M', 'PLACEK', 'LOWCZY', 'LYSY', '2008-12-01', 67, NULL, 2),
+       ('BARI', 'M', 'RURA', 'LAPACZ', 'LYSY', '2009-09-01', 56, NULL, 2),
+       ('ZUZIA', 'D', 'SZYBKA', 'LOWCZY', 'LYSY', '2006-07-21', 65, NULL, 2),
+       ('BELA', 'D', 'LASKA', 'MILUSIA', 'LYSY', '2008-02-01', 24, 28, 2),
+       ('SONIA', 'D', 'PUSZYSTA', 'MILUSIA', 'ZOMBI', '2010-11-18', 20, 35, 3),
+       ('PUNIA', 'D', 'KURKA', 'LOWCZY', 'ZOMBI', '2008-01-01', 61, NULL, 3),
+       ('LATKA', 'D', 'UCHO', 'KOT', 'RAFA', '2011-01-01', 40, NULL, 4),
+       ('DUDEK', 'M', 'MALY', 'KOT', 'RAFA', '2011-05-15', 40, NULL, 4),
+       ('KSAWERY', 'M', 'MAN', 'LAPACZ', 'RAFA', '2008-07-12', 51, NULL, 4),
+       ('MELA', 'D', 'DAMA', 'LAPACZ', 'RAFA', '2008-11-01', 51, NULL, 4);
+
+-- L4
+INSERT INTO Kocury
+VALUES ('LUCEK', 'M', 'ZERO', 'KOT', 'KURKA', '2010-03-01', 43, NULL, 3);
+
+INSERT INTO Wrogowie_kocurow
+VALUES ('TYGRYS', 'KAZIO', '2004-10-13', 'USILOWAL NABIC NA WIDLY'),
+       ('ZOMBI', 'SWAWOLNY DYZIO', '2005-03-07', 'WYBIL OKO Z PROCY'),
+       ('BOLEK', 'KAZIO', '2005-03-29', 'POSZCZUL BURKIEM'),
+       ('SZYBKA', 'GLUPIA ZOSKA', '2006-09-12', 'UZYLA KOTA JAKO SCIERKI'),
+       ('MALA', 'CHYTRUSEK', '2007-03-07', 'ZALECAL SIE'),
+       ('TYGRYS', 'DZIKI BILL', '2007-06-12', 'USILOWAL POZBAWIC ZYCIA'),
+       ('BOLEK', 'DZIKI BILL', '2007-11-10', 'ODGRYZL UCHO'),
+       ('LASKA', 'DZIKI BILL', '2008-12-12', 'POGRYZL ZE LEDWO SIE WYLIZALA'),
+       ('LASKA', 'KAZIO', '2009-01-07', 'ZLAPAL ZA OGON I ZROBIL WIATRAK'),
+       ('DAMA', 'KAZIO', '2009-02-07', 'CHCIAL OBEDRZEC ZE SKORY'),
+       ('MAN', 'REKSIO', '2009-04-14', 'WYJATKOWO NIEGRZECZNIE OBSZCZEKAL'),
+       ('LYSY', 'BETHOVEN', '2009-05-11', 'NIE PODZIELIL SIE SWOJA KASZA'),
+       ('RURA', 'DZIKI BILL', '2009-09-03', 'ODGRYZL OGON'),
+       ('PLACEK', 'BAZYLI', '2010-07-12', 'DZIOBIAC UNIEMOZLIWIL PODEBRANIE KURCZAKA'),
+       ('PUSZYSTA', 'SMUKLA', '2010-11-19', 'OBRZUCILA SZYSZKAMI'),
+       ('KURKA', 'BUREK', '2010-12-14', 'POGONIL'),
+       ('MALY', 'CHYTRUSEK', '2011-07-13', 'PODEBRAL PODEBRANE JAJKA'),
+       ('UCHO', 'SWAWOLNY DYZIO', '2011-07-14', 'OBRZUCIL KAMIENIAMI');
+
+UPDATE Bandy
+SET szef_bandy = CASE nr_bandy
+                     WHEN 1 THEN 'TYGRYS'
+                     WHEN 2 THEN 'LYSY'
+                     WHEN 3 THEN 'ZOMBI'
+                     WHEN 4 THEN 'RAFA'
+    END
+WHERE nr_bandy IN (1, 2, 3, 4);
+
+COMMIT;
