@@ -1,0 +1,116 @@
+
+########
+Prompt 1 - zbudowanie prototypu projektu
+########
+
+<role>
+Jesteś doświadczonym projektantem UI/UX aplikacji iOS. Pracujesz bezpośrednio w Figmie przez Figma MCP i znasz Apple Human Interface Guidelines.
+</role>
+
+<context>
+Projektujesz aplikację "Stay" do wyszukiwania hoteli, przeglądania ofert i rezerwacji pobytu. Liczą się spójność wizualna, czytelna nawigacja i zgodność z konwencjami iOS. Treści są po polsku, ceny w PLN.
+</context>
+
+<task>
+Utwórz plik Figma "Stay – iOS UI" i zaprojektuj 6 ekranów tworzących jeden ciągły przepływ:
+1. Wyszukiwanie: cel, daty, liczba gości, sekcja "Polecane"
+2. Wyniki: karty hoteli, filtry i sortowanie, przełącznik Lista/Mapa
+3. Szczegóły hotelu: galeria, udogodnienia, opinie, przypięty pasek z ceną i przyciskiem CTA
+4. Wybór pokoju: warianty z ceną i opcjami (śniadanie, bezpłatne anulowanie)
+5. Podsumowanie i płatność: dane gościa, Apple Pay, rozbicie ceny
+6. Potwierdzenie: numer rezerwacji, akcja "Dodaj do Kalendarza"
+
+Najpierw zdefiniuj zmienne (kolory, typografia, odstępy) i komponenty z Auto Layout (Tab Bar, Nav Bar, karta hotelu, przyciski, pola formularza). Potem złóż z nich ekrany i połącz je prototypem 1→6. Po każdym ekranie zrób get_screenshot i popraw błędy wizualne.
+</task>
+
+<constraints>
+- Ramki 393×852 pt (iPhone 16) z zachowaniem safe area: status bar i home indicator.
+- Tab Bar (Szukaj, Ulubione, Rezerwacje, Profil) na ekranach 1–2, nawigacja push z przyciskiem wstecz na ekranach 3–5.
+- SF Pro (zamiennik: Inter), skala Dynamic Type, Large Title na ekranach głównych.
+- Obszar dotyku min. 44×44 pt, marginesy 16 pt, siatka 8 pt, kontrast min. WCAG AA.
+- Natywne wzorce iOS: segmented control, sheet z date pickerem, inset grouped list.
+- Jeden kolor akcentu, bez lorem ipsum i bez pustych prostokątów zamiast zdjęć.
+- Warstwy nazwane sensownie, na ekranach tylko instancje komponentów.
+</constraints>
+
+<output>
+Na koniec podaj:
+1. Listę ekranów z node ID.
+2. Listę komponentów i zmiennych.
+</output>
+
+########
+Prompt 2 - dodanie ciemnego motywu
+########
+
+<context>
+Projekt jasnego motywu jest zatwierdzony i nie wymaga zmian w układzie, treściach ani komponentach. Teraz potrzebna jest wersja w ciemnym motywie (Dark Mode) tych samych 6 ekranów.
+</context>
+
+<task>
+1. Dodaj do istniejących kolekcji zmiennych kolorów tryb "Dark" obok "Light". Nie twórz osobnych, zdublowanych stylów.
+2. Zduplikuj wszystkie 6 ekranów, nazwij je "01 – Wyszukiwanie (Dark)" itd., umieść w rzędzie poniżej jasnych wersji i ustaw na nich tryb Dark.
+3. Popraw elementy, które nie przełączają się poprawnie: kolory wpisane na sztywno, ikony, cienie, obramowania.
+4. Połącz ciemne ekrany prototypem tak samo jak jasne (1→6).
+5. Po każdym ekranie zrób get_screenshot i porównaj go z jasną wersją.
+</task>
+
+<constraints>
+- Używaj semantyki kolorów systemowych iOS: tło #000000, tło drugorzędne #1C1C1E, tło trzeciorzędne #2C2C2E, tekst główny biały, tekst drugorzędny z obniżoną nieprzezroczystością.
+- Głębię oddawaj jaśniejszymi powierzchniami (elevated surfaces), a nie cieniami.
+- Dostosuj kolor akcentu do ciemnego tła, zachowując jego tożsamość. Kontrast min. WCAG AA dla wszystkich par tekst/tło.
+- Status bar z jasną treścią, przycisk Apple Pay w wariancie białym zgodnie z wytycznymi Apple.
+- Zdjęcia hoteli bez zmian. W razie potrzeby przyciemnij gradienty i nakładki pod tekstem.
+- Nie zmieniaj układu, odstępów, typografii ani struktury komponentów.
+</constraints>
+
+<output>
+Na koniec podaj:
+1. Listę ciemnych ekranów z node ID.
+2. Tabelę mapowania zmiennych kolorów Light → Dark.
+3. Elementy, które nie przełączyły się automatycznie i wymagały ręcznej poprawki.
+4. Pary kolorów, które przy pierwszej próbie nie spełniły wymogu kontrastu, i sposób ich poprawienia.
+</output>
+
+#########
+Prompt 3 - redukcja szumu informacyjnego
+#########
+
+<context>
+Wersje jasna i ciemna są zatwierdzone. Ekrany pokazują jednak za dużo informacji naraz i za bardzo bodźcują użytkownika. Celem jest bardziej minimalistyczny projekt: każdy ekran eksponuje tylko to, co w danym kroku najważniejsze, a resztę udostępnia na żądanie (progressive disclosure).
+</context>
+
+<task>
+1. Dla każdego z 6 ekranów określ jedną główną informację i jedną główną akcję. Wypisz je, zanim zaczniesz zmiany.
+2. Usuń albo ukryj wszystko, co nie wspiera tego celu. Treści drugorzędne przenieś do elementów rozwijanych:
+   - Wyszukiwanie: tylko pole "Dokąd?" i daty. Liczbę gości przenieś do sheetu, a "Polecane" ogranicz do jednego poziomego rzędu.
+   - Wyniki: karta hotelu zawiera zdjęcie, nazwę, ocenę i cenę. Filtry schowaj pod jednym przyciskiem otwierającym sheet.
+   - Szczegóły: zdjęcie, nazwa, kluczowe 3 udogodnienia i CTA. Pełny opis i opinie daj pod "Pokaż więcej", a pełną listę udogodnień w osobnym sheecie.
+   - Wybór pokoju: nazwa i cena. Opcje i szczegóły pokoju rozwijaj po dotknięciu (disclosure / accordion).
+   - Płatność: łączna kwota i Apple Pay. Rozbicie ceny i formularz danych gościa daj jako rozwijane sekcje.
+   - Potwierdzenie: komunikat sukcesu i numer rezerwacji. Szczegóły pod "Zobacz szczegóły".
+3. Zaprojektuj rozwinięte stany i sheety jako osobne ramki obok ekranów, połączone prototypem.
+4. Zastosuj zmiany w wersji jasnej i ciemnej, korzystając z istniejących zmiennych i komponentów.
+5. Po każdym ekranie zrób get_screenshot i porównaj go z poprzednią wersją.
+</task>
+
+<constraints>
+- Jedna wyróżniona akcja (przycisk główny) na ekran. Pozostałe akcje mają być drugorzędne albo tekstowe.
+- Więcej światła: większe odstępy między sekcjami, mniej ramek, separatorów i kolorowych etykiet.
+- Ogranicz kolor akcentu do elementów interaktywnych. Bez dekoracyjnych ikon i badge'y.
+- Hierarchię buduj rozmiarem i grubością fontu, a nie kolorem.
+- Ukrywane treści muszą być łatwo odkrywalne: czytelne etykiety ("Pokaż więcej", chevron), bez ukrytych gestów jako jedynej drogi.
+- Zachowaj zgodność z HIG, nawigację (Tab Bar, push), obszary dotyku 44 pt i kontrast WCAG AA.
+</constraints>
+
+<output>
+Na koniec podaj:
+1. Tabelę: ekran → główna informacja → główna akcja → co ukryto i gdzie.
+2. Listę nowych ramek (sheety, stany rozwinięte) z node ID.
+</output>
+
+#########
+Prompt 4
+########
+
+Przywróć poprzednią wersję aplikacji.
